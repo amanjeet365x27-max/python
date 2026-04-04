@@ -51,7 +51,7 @@ module.exports = {
         { name: "📥 Joins (24h)", value: `\`${last24hJoins}\``, inline: true },
         { name: "📤 Leaves (24h)", value: `\`${last24hLeaves}\``, inline: true }
       )
-      .setFooter({ text: "⚡ Powered by your bot" })
+      .setFooter({ text: "⚡ Powered by HEROIC HUSTLE" })
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });

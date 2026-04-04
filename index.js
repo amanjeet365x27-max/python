@@ -1,38 +1,47 @@
-const { Client, GatewayIntentBits } = require("discord.js");
+const { Client, GatewayIntentBits, REST, Routes } = require("discord.js");
+const si = require("./si");
 
-// 🛑 prevent multiple instances (VERY IMPORTANT)
-if (global.botRunning) {
-  console.log("Bot already running, skipping duplicate instance");
-  process.exit(0);
-}
-global.botRunning = true;
+const TOKEN = process.env.DISCORD_BOT_TOKEN;
+const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
+    GatewayIntentBits.GuildMembers
   ]
 });
 
-client.once("clientReady", () => {
+client.once("clientReady", async () => {
   console.log(`Logged in as ${client.user.tag}`);
+
+  const commands = [si.data.toJSON()];
+
+  const rest = new REST({ version: "10" }).setToken(TOKEN);
+
+  await rest.put(
+    Routes.applicationCommands(CLIENT_ID),
+    { body: commands }
+  );
+
+  console.log("Slash command registered");
 });
 
-client.on("messageCreate", (message) => {
-  if (message.author.bot) return;
-  if (!message.content.startsWith("!calc")) return;
+// track joins/leaves
+client.on("guildMemberAdd", () => {
+  si.joins.push(Date.now());
+});
 
-  console.log("Handled once:", message.content);
+client.on("guildMemberRemove", () => {
+  si.leaves.push(Date.now());
+});
 
-  try {
-    const expr = message.content.replace("!calc", "").trim();
-    const result = eval(expr);
-    message.reply(`Result: ${result}`);
-  } catch {
-    message.reply("Invalid calculation");
+// command handler
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+
+  if (interaction.commandName === "serverinfo") {
+    await si.execute(interaction);
   }
 });
 
-// ✅ use YOUR secret name
-client.login(process.env.DISCORD_BOT_TOKEN);
+client.login(TOKEN);

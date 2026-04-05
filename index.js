@@ -1,5 +1,5 @@
 const { Client, GatewayIntentBits, REST, Routes } = require("discord.js");
-const si = require("./si");
+const si = require("./si");   // Make sure the file is named si.js
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
@@ -7,35 +7,42 @@ const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers
-  ]
+    GatewayIntentBits.GuildMembers,
+  ],
 });
 
-client.once("clientReady", async () => {
-  console.log(`Logged in as ${client.user.tag}`);
+client.once("ready", async () => {   // Better to use "ready" instead of "clientReady"
+  console.log(`✅ Logged in as ${client.user.tag}`);
 
   const commands = [si.data.toJSON()];
 
   const rest = new REST({ version: "10" }).setToken(TOKEN);
 
-  await rest.put(
-    Routes.applicationCommands(CLIENT_ID),
-    { body: commands }
-  );
-
-  console.log("Slash command registered");
+  try {
+    await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
+    console.log("✅ Slash commands registered successfully");
+  } catch (error) {
+    console.error("❌ Failed to register commands:", error);
+  }
 });
 
-// track joins/leaves
-client.on("guildMemberAdd", () => {
+// ==================== TRACK JOINS & LEAVES ====================
+client.on("guildMemberAdd", (member) => {
   si.joins.push(Date.now());
+
+  // Optional: Clean very old entries (older than 48h) to prevent memory leak
+  const now = Date.now();
+  si.joins = si.joins.filter((t) => now - t < 86400000 * 2);
 });
 
-client.on("guildMemberRemove", () => {
+client.on("guildMemberRemove", (member) => {
   si.leaves.push(Date.now());
+
+  const now = Date.now();
+  si.leaves = si.leaves.filter((t) => now - t < 86400000 * 2);
 });
 
-// command handler
+// ==================== COMMAND HANDLER ====================
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 

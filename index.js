@@ -88,33 +88,18 @@ client.on("messageCreate", async (message) => {
   if (message.channel.id !== data.activeTournament.channelId) return;
   if (message.author.bot) return;
 
-  const content = message.content;
+  // ===== ✅ ONLY FIXED PART (VALIDATION) =====
+  const result = tournament.validateMessage(message, data);
 
-  // ===== FORMAT CHECK =====
-  if (!content.toLowerCase().startsWith("team name-")) {
-    return message.reply("Use format: Team Name- xyz @mentions");
+  if (typeof result === "string") {
+    return message.reply(result);
   }
 
-  // ===== CLEAN TEAM NAME =====
-  const raw = content.slice(10).trim();
-  const teamName = raw.split("<@")[0].trim();
-
-  const mentions = [...message.mentions.users.values()];
-
-  if (!teamName) {
-    return message.reply("Invalid team name.");
-  }
-
-  // ===== MENTION COUNT =====
-  if (mentions.length !== data.activeTournament.mentionsReq) {
-    return message.reply(
-      `You must mention exactly ${data.activeTournament.mentionsReq} players.`
-    );
-  }
+  const { teamName, mentions } = result;
 
   // ===== DUPLICATE CHECK =====
   for (let m of mentions) {
-    const embed = tournament.getDuplicateEmbed(m.id);
+    const embed = tournament.getDuplicateEmbed(m);
     if (embed) {
       return message.reply({ embeds: [embed] });
     }
@@ -123,7 +108,7 @@ client.on("messageCreate", async (message) => {
   // ===== SAVE TEAM =====
   data.registrations.push({
     teamName,
-    members: mentions.map(m => m.id),
+    members: mentions,
     leaderId: message.author.id
   });
 

@@ -75,7 +75,8 @@ module.exports = {
       .setTitle(name)
       .setDescription("Tournament Registration Open")
       .addFields(
-        { name: "Format", value: "Team Name- xyz @mentions" },
+        { name: "Format", value: "Team Name- YOUR TEAM NAME
+          @mentions" },
         { name: "Slots", value: `${slots}`, inline: true },
         { name: "Players", value: `${mentionsReq}`, inline: true }
       )

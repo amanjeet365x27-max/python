@@ -7,7 +7,15 @@ module.exports = {
     .setDescription("Show all running tournaments"),
 
   async execute(interaction) {
-    const data = await tournament.getData(); // ✅ FIXED
+    // 🔥 ADMIN CHECK
+    const ADMIN_ROLE_ID = "1488964288210272458";
+    const member = await interaction.guild.members.fetch(interaction.user.id);
+
+    if (!member.roles.cache.has(ADMIN_ROLE_ID)) {
+      return interaction.reply({ content: "Only admin can use this.", ephemeral: true });
+    }
+
+    const data = await tournament.getData();
 
     if (!data.tournaments || Object.keys(data.tournaments).length === 0) {
       return interaction.reply({ content: "No tournaments running", ephemeral: true });

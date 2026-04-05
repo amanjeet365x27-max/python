@@ -3,7 +3,7 @@ const fs = require("fs");
 
 const DATA_FILE = "tournament.json";
 
-// ===== LOAD DATA =====
+// ===== LOAD =====
 function loadData() {
   if (!fs.existsSync(DATA_FILE)) {
     return { activeTournament: null, registrations: [] };
@@ -11,7 +11,7 @@ function loadData() {
   return JSON.parse(fs.readFileSync(DATA_FILE));
 }
 
-// ===== SAVE DATA =====
+// ===== SAVE =====
 function saveData(data) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
@@ -39,10 +39,7 @@ module.exports = {
     const ADMIN_ROLE_ID = "1488964288210272458";
 
     if (!interaction.member.roles.cache.has(ADMIN_ROLE_ID)) {
-      return interaction.reply({
-        content: "Only admins can use this.",
-        ephemeral: true
-      });
+      return interaction.reply({ content: "Only admins can use this.", ephemeral: true });
     }
 
     const name = interaction.options.getString("name");
@@ -97,24 +94,24 @@ module.exports = {
 
     saveData({ activeTournament, registrations });
 
-    // ===== CREATE ROLE (FIXED NAME) =====
+    // ===== ROLE (FIXED NAME CLEAN) =====
     if (message) {
       const lastTeam = registrations[registrations.length - 1];
       if (!lastTeam) return;
 
-      const cleanName = lastTeam.teamName.replace(/[^\w\s]/gi, "").trim();
+      const cleanName = lastTeam.teamName.replace(/[<>@#]/g, "").trim();
 
       const role = await message.guild.roles.create({
         name: cleanName,
         reason: "Tournament IGL Role"
       });
 
-      const member = await message.guild.members.fetch(message.author.id);
+      const member = await message.guild.members.fetch(lastTeam.leaderId);
       await member.roles.add(role);
     }
   },
 
-  // ===== DUPLICATE EMBED FUNCTION =====
+  // ===== DUPLICATE EMBED (FIXED) =====
   getDuplicateEmbed(playerId) {
     const team = registrations.find(t => t.members.includes(playerId));
     if (!team) return null;
@@ -128,7 +125,7 @@ module.exports = {
         `**Team:** ${team.teamName}\n` +
         `**Slot:** ${slot}\n\n` +
         `**Players:**\n${team.members.map(id => `<@${id}>`).join("\n")}\n\n` +
-        `**Registered By:** <@${team.members[0]}>`
+        `**Registered By:** <@${team.leaderId}>`
       );
   }
 };

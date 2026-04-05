@@ -92,23 +92,21 @@ client.on("messageCreate", async (message) => {
     );
   }
 
-  // duplicate player check
-  for (let m of mentions) {
-    const already = data.registrations.find(t =>
-      t.members.includes(m.id)
-    );
+  // ✅ FIXED: duplicate check INCLUDING IGL
+  const allPlayers = [...mentions.map(m => m.id), message.author.id];
 
-    if (already) {
-      return message.reply(
-        `<@${m.id}> already registered in ${already.teamName}`
-      );
+  for (let id of allPlayers) {
+    const embed = tournament.getDuplicateEmbed(id);
+
+    if (embed) {
+      return message.reply({ embeds: [embed] });
     }
   }
 
-  // save team
+  // save team (INCLUDING IGL)
   data.registrations.push({
     teamName,
-    members: mentions.map(m => m.id)
+    members: allPlayers
   });
 
   // ✅ SAVE + CREATE ROLE

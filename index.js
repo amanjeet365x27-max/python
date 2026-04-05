@@ -11,7 +11,7 @@ const client = new Client({
   ],
 });
 
-client.once("ready", async () => {   // Better to use "ready" instead of "clientReady"
+client.once("clientReady", async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 
   const commands = [si.data.toJSON()];

@@ -8,6 +8,7 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildPresences // 🔥 ADD THIS (VERY IMPORTANT)
   ],
 });
 
@@ -30,7 +31,6 @@ client.once("clientReady", async () => {
 client.on("guildMemberAdd", (member) => {
   si.joins.push(Date.now());
 
-  // Optional: Clean very old entries (older than 48h) to prevent memory leak
   const now = Date.now();
   si.joins = si.joins.filter((t) => now - t < 86400000 * 2);
 });

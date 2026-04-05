@@ -20,15 +20,16 @@ module.exports = {
 
     const guild = interaction.guild;
 
-    // Fetch members with presences for accurate online count
-    await guild.members.fetch({ withPresences: true }).catch(() => {});
+    // 🔥 FIX: fetch members normally (presence handled separately)
+    await guild.members.fetch().catch(() => {});
 
     const total = guild.memberCount;
     const bots = guild.members.cache.filter((m) => m.user.bot).size;
     const humans = total - bots;
 
+    // 🔥 FIX: safer online count
     const online = guild.members.cache.filter(
-      (m) => m.presence?.status && m.presence.status !== "offline"
+      (m) => m.presence && m.presence.status !== "offline"
     ).size;
 
     const now = Date.now();
@@ -54,7 +55,6 @@ module.exports = {
     await interaction.reply({ embeds: [embed] });
   },
 
-  // Export the arrays so index.js can push to them
   joins,
   leaves,
 };

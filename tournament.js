@@ -1,89 +1,124 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
-const fs = require("fs");
+const pool = require("./db");
 
-const FILE = "tournament.json";
+// ================= LOAD DATA =================
+async function loadData() {
+  const res = await pool.query("SELECT * FROM tournaments");
 
-// ===== LOAD =====
-function load() {
-  if (!fs.existsSync(FILE)) return { tournaments: {} };
-  return JSON.parse(fs.readFileSync(FILE));
+  const tournaments = {};
+
+  res.rows.forEach(row => {
+    tournaments[row.name] = row.data;
+  });
+
+  return { tournaments };
 }
 
-// ===== SAVE =====
-function save(data) {
-  fs.writeFileSync(FILE, JSON.stringify(data, null, 2));
+// ================= SAVE DATA =================
+async function saveData(data) {
+  for (let name in data.tournaments) {
+    await pool.query(
+      `INSERT INTO tournaments (name, data)
+       VALUES ($1, $2)
+       ON CONFLICT (name)
+       DO UPDATE SET data = $2`,
+      [name, data.tournaments[name]]
+    );
+  }
 }
 
+// ================= COMMAND =================
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("tournament")
-    .setDescription("Start tournament")
-    .addStringOption(o => o.setName("name").setDescription("Name").setRequired(true))
-    .addIntegerOption(o => o.setName("slots").setDescription("Slots").setRequired(true))
-    .addIntegerOption(o => o.setName("mentions").setDescription("Players").setRequired(true))
-    .addChannelOption(o => o.setName("channel").setDescription("Channel").setRequired(true)),
+    .setDescription("Create a tournament")
+    .addStringOption(option =>
+      option.setName("name").setDescription("Tournament name").setRequired(true)
+    )
+    .addIntegerOption(option =>
+      option.setName("slots").setDescription("Total slots").setRequired(true)
+    )
+    .addIntegerOption(option =>
+      option.setName("mentions").setDescription("Mentions required").setRequired(true)
+    )
+    .addChannelOption(option =>
+      option.setName("channel").setDescription("Registration channel").setRequired(true)
+    ),
 
   async execute(interaction) {
-    const ADMIN = "1488964288210272458";
-    if (!interaction.member.roles.cache.has(ADMIN)) {
-      return interaction.reply({ content: "Only admin", ephemeral: true });
+    const ADMIN_ID = "1488964288210272458";
+
+    if (interaction.user.id !== ADMIN_ID) {
+      return interaction.reply({ content: "Only admin can use this.", ephemeral: true });
     }
 
-    const data = load();
-
     const name = interaction.options.getString("name");
+    const slots = interaction.options.getInteger("slots");
+    const mentions = interaction.options.getInteger("mentions");
+    const channel = interaction.options.getChannel("channel");
+
+    const data = await loadData();
+
+    if (!data.tournaments) data.tournaments = {};
 
     data.tournaments[name] = {
       name,
-      slots: interaction.options.getInteger("slots"),
-      mentionsReq: interaction.options.getInteger("mentions"),
-      channelId: interaction.options.getChannel("channel").id,
+      slots,
+      mentions,
+      channelId: channel.id,
       registrations: []
     };
 
-    save(data);
+    await saveData(data);
 
     const embed = new EmbedBuilder()
-      .setTitle(name)
-      .setDescription("Registration Open")
+      .setColor(0x00ff99)
+      .setTitle("Tournament Created")
+      .setDescription(`Name: **${name}**`)
       .addFields(
-        { name: "Format", value: "Team Name - xyz\n@mentions" },
-        { name: "Slots", value: `${data.tournaments[name].slots}`, inline: true }
+        { name: "Slots", value: `${slots}`, inline: true },
+        { name: "Mentions Required", value: `${mentions}`, inline: true },
+        { name: "Channel", value: `<#${channel.id}>` }
       )
-      .setColor("Red");
+      .setImage("https://cdn.oneesports.id/cdn-data/sites/2/2024/12/462574290_1265728211300654_4514308865345103186_n.jpg");
 
-    await interaction.reply({ content: "Tournament created", ephemeral: true });
-    await interaction.options.getChannel("channel").send({ embeds: [embed] });
+    await interaction.reply({ embeds: [embed] });
   },
 
-  getData() {
-    return load();
+  // ================= GET DATA =================
+  async getData() {
+    return await loadData();
   },
 
-  saveData(data) {
-    save(data);
+  // ================= SAVE DATA =================
+  async saveData(data) {
+    await saveData(data);
   },
 
-  // ===== VALIDATION =====
-  validate(message, tournament) {
-    if (!message.content.toLowerCase().startsWith("team name")) {
-      return "Use format:\nTeam Name - xyz\n@mentions";
+  // ================= VALIDATE =================
+  validate(message, t) {
+    const content = message.content.trim();
+
+    if (!content.toLowerCase().startsWith("team name-")) {
+      return "Use format: Team Name- xyz @mentions";
     }
 
-    const name = message.content.split("-")[1]?.split("<@")[0].trim();
-    if (!name) return "Invalid team name";
+    const teamName = content.split("Team Name-")[1]?.split("\n")[0]?.trim();
+    if (!teamName) return "Invalid team name.";
 
-    const mentions = [...message.mentions.users.values()];
-    const ids = mentions.map(m => m.id);
+    const mentions = message.mentions.users;
 
-    if (ids.length !== tournament.mentionsReq) {
-      return `Mention exactly ${tournament.mentionsReq} players`;
+    if (mentions.size !== t.mentions) {
+      return `You must mention exactly ${t.mentions} players (including yourself).`;
     }
 
-    if (!ids.includes(message.author.id)) {
-      return "You must include yourself";
+    if (!mentions.has(message.author.id)) {
+      return "You must include yourself in mentions.";
     }
 
-    return { teamName: name, members: ids };
+    return {
+      teamName,
+      members: [...mentions.keys()]
+    };
   }
 };

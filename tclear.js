@@ -10,15 +10,17 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    const ADMIN_ID = "1488964288210272458";
+    // 🔥 ADMIN CHECK
+    const ADMIN_ROLE_ID = "1488964288210272458";
+    const member = await interaction.guild.members.fetch(interaction.user.id);
 
-    if (interaction.user.id !== ADMIN_ID) {
+    if (!member.roles.cache.has(ADMIN_ROLE_ID)) {
       return interaction.reply({ content: "Only admin can use this.", ephemeral: true });
     }
 
     const name = interaction.options.getString("name");
 
-    const data = await tournament.getData(); // ✅ FIXED
+    const data = await tournament.getData();
 
     if (!data.tournaments || !data.tournaments[name]) {
       return interaction.reply({ content: "Tournament not found", ephemeral: true });
@@ -26,7 +28,7 @@ module.exports = {
 
     delete data.tournaments[name];
 
-    await tournament.saveData(data); // ✅ FIXED
+    await tournament.saveData(data);
 
     await interaction.reply(`Tournament **${name}** cleared successfully`);
   }

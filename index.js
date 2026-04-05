@@ -18,7 +18,6 @@ const client = new Client({
   ],
 });
 
-// ================= READY =================
 client.once("clientReady", async () => {
   console.log(`Logged in as ${client.user.tag}`);
 
@@ -33,7 +32,11 @@ client.once("clientReady", async () => {
   const rest = new REST({ version: "10" }).setToken(TOKEN);
 
   try {
-    await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
+    await rest.put(
+      Routes.applicationCommands(CLIENT_ID),
+      { body: commands }
+    );
+
     console.log("Slash commands registered");
   } catch (error) {
     console.error(error);
@@ -80,7 +83,7 @@ client.on("interactionCreate", async (interaction) => {
 
 // ================= MESSAGE LISTENER =================
 client.on("messageCreate", async (message) => {
-  const data = tournament.getData();
+  const data = await tournament.getData(); // ✅ FIXED
 
   if (!data.tournaments) return;
   if (message.author.bot) return;
@@ -88,10 +91,7 @@ client.on("messageCreate", async (message) => {
   for (let tName in data.tournaments) {
     const t = data.tournaments[tName];
 
-    // check channel match
     if (message.channel.id !== t.channelId) continue;
-
-    // stop if full
     if (t.registrations.length >= t.slots) return;
 
     const result = tournament.validate(message, t);
@@ -100,7 +100,6 @@ client.on("messageCreate", async (message) => {
       return message.reply(result);
     }
 
-    // ===== DUPLICATE CHECK =====
     for (let team of t.registrations) {
       for (let id of result.members) {
         if (team.members.includes(id)) {
@@ -109,16 +108,14 @@ client.on("messageCreate", async (message) => {
       }
     }
 
-    // ===== SAVE TEAM =====
     t.registrations.push({
       teamName: result.teamName,
       members: result.members,
       leaderId: message.author.id
     });
 
-    tournament.saveData(data);
+    await tournament.saveData(data); // ✅ FIXED
 
-    // ===== SUCCESS =====
     await message.reply({
       embeds: [{
         color: 0x00ff00,
@@ -126,7 +123,6 @@ client.on("messageCreate", async (message) => {
       }]
     });
 
-    // ===== FULL =====
     if (t.registrations.length >= t.slots) {
       await message.channel.send({
         embeds: [{
@@ -142,7 +138,7 @@ client.on("messageCreate", async (message) => {
       );
     }
 
-    return; // stop after handling correct tournament
+    return;
   }
 });
 

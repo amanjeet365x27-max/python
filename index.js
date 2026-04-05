@@ -17,7 +17,7 @@ const client = new Client({
 
 // ================= READY =================
 client.once("clientReady", async () => {
-  console.log(`✅ Logged in as ${client.user.tag}`);
+  console.log(`Logged in as ${client.user.tag}`);
 
   const commands = [
     si.data.toJSON(),
@@ -28,9 +28,9 @@ client.once("clientReady", async () => {
 
   try {
     await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
-    console.log("✅ Slash commands registered successfully");
+    console.log("Slash commands registered");
   } catch (error) {
-    console.error("❌ Failed to register commands:", error);
+    console.error(error);
   }
 });
 
@@ -60,36 +60,39 @@ client.on("interactionCreate", async (interaction) => {
   }
 });
 
-// ================= 🔥 MESSAGE LISTENER =================
+// ================= MESSAGE LISTENER =================
 client.on("messageCreate", async (message) => {
   const data = tournament.getData();
 
+  // stop if no tournament OR already full
   if (!data.activeTournament) return;
+  if (data.registrations.length >= data.activeTournament.slots) return;
+
   if (message.channel.id !== data.activeTournament.channelId) return;
   if (message.author.bot) return;
 
   const content = message.content;
 
-  // ===== FORMAT CHECK =====
+  // format check
   if (!content.toLowerCase().startsWith("team name-")) {
-    return message.reply("❌ Use format: `Team Name- xyz @mentions`");
+    return message.reply("Use format: Team Name- xyz @mentions");
   }
 
   const mentions = [...message.mentions.users.values()];
   const teamName = content.split("Team Name-")[1]?.split("@")[0]?.trim();
 
   if (!teamName) {
-    return message.reply("❌ Invalid team name format.");
+    return message.reply("Invalid team name format.");
   }
 
-  // ===== MENTION COUNT CHECK =====
+  // mention count check
   if (mentions.length !== data.activeTournament.mentionsReq) {
     return message.reply(
-      `❌ You must mention exactly ${data.activeTournament.mentionsReq} players.`
+      `You must mention exactly ${data.activeTournament.mentionsReq} players.`
     );
   }
 
-  // ===== DUPLICATE PLAYER CHECK =====
+  // duplicate player check
   for (let m of mentions) {
     const already = data.registrations.find(t =>
       t.members.includes(m.id)
@@ -97,32 +100,38 @@ client.on("messageCreate", async (message) => {
 
     if (already) {
       return message.reply(
-        `❌ <@${m.id}> already in **${already.teamName}**`
+        `<@${m.id}> already registered in ${already.teamName}`
       );
     }
   }
 
-  // ===== SLOT FULL CHECK =====
-  if (data.registrations.length >= data.activeTournament.slots) {
-    return message.reply("❌ Slots already full!");
-  }
-
-  // ===== SAVE TEAM =====
+  // save team
   data.registrations.push({
     teamName,
     members: mentions.map(m => m.id)
   });
 
-  message.reply(
-    `✅ Team **${teamName}** registered! (${data.registrations.length}/${data.activeTournament.slots})`
-  );
+  // ✅ SAVE + CREATE ROLE
+  await tournament.updateData(data, message);
 
-  // ===== SAVE TO FILE ✅ =====
-  tournament.updateData(data);
+  // success embed
+  const successEmbed = {
+    color: 0x00ff00,
+    description: `**Registration Successful**`
+  };
 
-  // ===== CLOSE REGISTRATION =====
+  await message.reply({ embeds: [successEmbed] });
+
+  // full check
   if (data.registrations.length >= data.activeTournament.slots) {
-    await message.channel.send("🚫 Registration full! Channel locked.");
+
+    const fullEmbed = {
+      color: 0xff0000,
+      title: "Registration Closed",
+      description: "All slots are filled.\nRoadmap will be announced soon."
+    };
+
+    await message.channel.send({ embeds: [fullEmbed] });
 
     await message.channel.permissionOverwrites.edit(
       message.guild.roles.everyone,

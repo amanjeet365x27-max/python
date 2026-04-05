@@ -22,20 +22,36 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName("tournament")
     .setDescription("Start tournament registration")
+
+    // ✅ ALL OPTIONS NOW HAVE DESCRIPTION (FIXED)
     .addStringOption(opt =>
-      opt.setName("name").setRequired(true))
+      opt.setName("name")
+        .setDescription("Tournament name")
+        .setRequired(true))
+
     .addIntegerOption(opt =>
-      opt.setName("slots").setRequired(true))
+      opt.setName("slots")
+        .setDescription("Total slots")
+        .setRequired(true))
+
     .addIntegerOption(opt =>
-      opt.setName("mentions").setRequired(true))
+      opt.setName("mentions")
+        .setDescription("Players per team")
+        .setRequired(true))
+
     .addChannelOption(opt =>
-      opt.setName("channel").setRequired(true)),
+      opt.setName("channel")
+        .setDescription("Registration channel")
+        .setRequired(true)),
 
   async execute(interaction) {
     const ADMIN_ROLE_ID = "1488964288210272458";
 
     if (!interaction.member.roles.cache.has(ADMIN_ROLE_ID)) {
-      return interaction.reply({ content: "Only admins can use this.", ephemeral: true });
+      return interaction.reply({
+        content: "Only admins can use this.",
+        ephemeral: true
+      });
     }
 
     const name = interaction.options.getString("name");
@@ -54,6 +70,7 @@ module.exports = {
 
     saveData({ activeTournament, registrations });
 
+    // ===== EMBED =====
     const embed = new EmbedBuilder()
       .setTitle(name)
       .setDescription("Tournament Registration Open")
@@ -86,13 +103,11 @@ module.exports = {
 
       const guild = message.guild;
 
-      // create role with team name
       const role = await guild.roles.create({
         name: lastTeam.teamName,
         reason: "Tournament IGL Role"
       });
 
-      // give role to message author (IGL)
       const member = await guild.members.fetch(message.author.id);
       await member.roles.add(role);
     }

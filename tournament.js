@@ -64,7 +64,7 @@ module.exports = {
       .addFields(
         {
           name: "Format",
-          value: "Team Name- YOUR TEAM NAME\n@mentions"
+          value: "Team Name - YOUR TEAM NAME\n@mention yourself + teammates"
         },
         {
           name: "Total Slots",
@@ -94,7 +94,7 @@ module.exports = {
 
     saveData({ activeTournament, registrations });
 
-    // ===== ROLE (FIXED NAME CLEAN) =====
+    // ===== ROLE CREATE =====
     if (message) {
       const lastTeam = registrations[registrations.length - 1];
       if (!lastTeam) return;
@@ -111,7 +111,7 @@ module.exports = {
     }
   },
 
-  // ===== DUPLICATE EMBED (FIXED) =====
+  // ===== DUPLICATE CHECK EMBED =====
   getDuplicateEmbed(playerId) {
     const team = registrations.find(t => t.members.includes(playerId));
     if (!team) return null;
@@ -127,5 +127,40 @@ module.exports = {
         `**Players:**\n${team.members.map(id => `<@${id}>`).join("\n")}\n\n` +
         `**Registered By:** <@${team.leaderId}>`
       );
+  },
+
+  // ===== MAIN VALIDATION FUNCTION =====
+  validateMessage(message, data) {
+    const content = message.content.toLowerCase();
+
+    // Flexible format check
+    if (!content.startsWith("team name")) {
+      return "Use format:\nTeam Name - xyz\n@mentions";
+    }
+
+    // Extract team name
+    const split = message.content.split("-");
+    if (split.length < 2) return "Invalid format. Use: Team Name - xyz";
+
+    const teamName = split[1].split("<@")[0].trim();
+
+    if (!teamName) return "Invalid team name.";
+
+    const mentions = [...message.mentions.users.values()];
+
+    // Unique mentions
+    const uniqueMentions = [...new Set(mentions.map(m => m.id))];
+
+    // Count check
+    if (uniqueMentions.length !== data.activeTournament.mentionsReq) {
+      return `You must mention exactly ${data.activeTournament.mentionsReq} players (including yourself).`;
+    }
+
+    // SELF CHECK (IMPORTANT)
+    if (!uniqueMentions.includes(message.author.id)) {
+      return "You must include your own tag in the team.";
+    }
+
+    return { teamName, mentions: uniqueMentions };
   }
 };

@@ -4,36 +4,34 @@ const tournament = require("./tournament");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("slot")
-    .setDescription("Show slots of a tournament")
-    .addStringOption(opt =>
-      opt.setName("name")
-        .setDescription("Tournament name")
-        .setRequired(true)
+    .setDescription("View slots of a tournament")
+    .addStringOption(option =>
+      option.setName("name").setDescription("Tournament name").setRequired(true)
     ),
 
   async execute(interaction) {
-    const data = tournament.getData();
     const name = interaction.options.getString("name");
+
+    const data = await tournament.getData(); // ✅ FIXED
+
+    if (!data.tournaments || !data.tournaments[name]) {
+      return interaction.reply({ content: "Tournament not found", ephemeral: true });
+    }
 
     const t = data.tournaments[name];
 
-    if (!t) {
-      return interaction.reply({ content: "Tournament not found.", ephemeral: true });
-    }
-
-    let desc = "";
+    let desc = `**Slots Filled: ${t.registrations.length}/${t.slots}**\n\n`;
 
     t.registrations.forEach((team, i) => {
-      desc += `**• Slot ${i + 1}**\n`;
+      desc += `• **Slot ${i + 1}**\n`;
       desc += `Team: **${team.teamName}**\n`;
-      desc += `IGL: <@${team.leaderId}>\n`;
-      desc += `Players:\n${team.members.map(id => `<@${id}>`).join("\n")}\n\n`;
+      desc += `IGL: <@${team.leaderId}>\n\n`;
     });
 
     const embed = new EmbedBuilder()
-      .setTitle(`${t.name} Slots`)
-      .setDescription(desc || "No teams registered yet.")
-      .setColor("Blue");
+      .setColor(0x00ffff)
+      .setTitle(`Slots - ${name}`)
+      .setDescription(desc);
 
     await interaction.reply({ embeds: [embed] });
   }

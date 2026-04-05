@@ -1,6 +1,9 @@
 const { Client, GatewayIntentBits, REST, Routes } = require("discord.js");
 const si = require("./si");
 const tournament = require("./tournament");
+const slot = require("./slot");
+const tinfo = require("./tinfo");
+const tclear = require("./tclear");
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
@@ -21,7 +24,10 @@ client.once("clientReady", async () => {
 
   const commands = [
     si.data.toJSON(),
-    tournament.data.toJSON()
+    tournament.data.toJSON(),
+    slot.data.toJSON(),
+    tinfo.data.toJSON(),
+    tclear.data.toJSON()
   ];
 
   const rest = new REST({ version: "10" }).setToken(TOKEN);
@@ -58,6 +64,18 @@ client.on("interactionCreate", async (interaction) => {
   if (interaction.commandName === "tournament") {
     await tournament.execute(interaction);
   }
+
+  if (interaction.commandName === "slot") {
+    await slot.execute(interaction);
+  }
+
+  if (interaction.commandName === "tinfo") {
+    await tinfo.execute(interaction);
+  }
+
+  if (interaction.commandName === "tclear") {
+    await tclear.execute(interaction);
+  }
 });
 
 // ================= MESSAGE LISTENER =================
@@ -77,8 +95,8 @@ client.on("messageCreate", async (message) => {
     return message.reply("Use format: Team Name- xyz @mentions");
   }
 
-  // ===== CLEAN TEAM NAME (FIXED) =====
-  const raw = content.slice(10).trim(); // remove "Team Name-"
+  // ===== CLEAN TEAM NAME =====
+  const raw = content.slice(10).trim();
   const teamName = raw.split("<@")[0].trim();
 
   const mentions = [...message.mentions.users.values()];
@@ -94,7 +112,7 @@ client.on("messageCreate", async (message) => {
     );
   }
 
-  // ===== DUPLICATE CHECK (FIXED EMBED) =====
+  // ===== DUPLICATE CHECK =====
   for (let m of mentions) {
     const embed = tournament.getDuplicateEmbed(m.id);
     if (embed) {
@@ -102,7 +120,7 @@ client.on("messageCreate", async (message) => {
     }
   }
 
-  // ===== SAVE TEAM (FIXED leaderId) =====
+  // ===== SAVE TEAM =====
   data.registrations.push({
     teamName,
     members: mentions.map(m => m.id),

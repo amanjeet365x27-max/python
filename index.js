@@ -36,7 +36,6 @@ client.once("clientReady", async () => {
       Routes.applicationCommands(CLIENT_ID),
       { body: commands }
     );
-
     console.log("Slash commands registered");
   } catch (error) {
     console.error(error);
@@ -83,15 +82,17 @@ client.on("interactionCreate", async (interaction) => {
 
 // ================= MESSAGE LISTENER =================
 client.on("messageCreate", async (message) => {
-  const data = await tournament.getData(); // ✅ FIXED
+  if (message.author.bot) return;
+
+  const data = await tournament.getData();
 
   if (!data.tournaments) return;
-  if (message.author.bot) return;
 
   for (let tName in data.tournaments) {
     const t = data.tournaments[tName];
 
     if (message.channel.id !== t.channelId) continue;
+
     if (t.registrations.length >= t.slots) return;
 
     const result = tournament.validate(message, t);
@@ -100,21 +101,45 @@ client.on("messageCreate", async (message) => {
       return message.reply(result);
     }
 
-    for (let team of t.registrations) {
+    // ================= ALREADY REGISTERED =================
+    for (let i = 0; i < t.registrations.length; i++) {
+      const team = t.registrations[i];
+
       for (let id of result.members) {
         if (team.members.includes(id)) {
-          return message.reply("Player already registered in another team");
+          return message.reply({
+            embeds: [{
+              color: 0xff0000,
+              title: "Already Registered",
+              description:
+                `Team: **${team.teamName}**\n` +
+                `Slot: **${i + 1}**\n` +
+                `Registered By: <@${team.leaderId}>`
+            }]
+          });
         }
       }
     }
 
+    // ================= SAVE TEAM =================
     t.registrations.push({
       teamName: result.teamName,
       members: result.members,
       leaderId: message.author.id
     });
 
-    await tournament.saveData(data); // ✅ FIXED
+    // ================= ROLE CREATE FIX =================
+    const role = await message.guild.roles.create({
+      name: result.teamName.replace(/[<>@]/g, ""), // ✅ ONLY FIX
+      mentionable: true
+    });
+
+    for (let id of result.members) {
+      const member = await message.guild.members.fetch(id);
+      await member.roles.add(role);
+    }
+
+    await tournament.saveData(data);
 
     await message.reply({
       embeds: [{

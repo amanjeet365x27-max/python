@@ -4,34 +4,35 @@ const tournament = require("./tournament");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("slot")
-    .setDescription("View all slots")
+    .setDescription("Show slots of a tournament")
     .addStringOption(opt =>
       opt.setName("name")
         .setDescription("Tournament name")
-        .setRequired(true)),
+        .setRequired(true)
+    ),
 
   async execute(interaction) {
     const data = tournament.getData();
+    const name = interaction.options.getString("name");
 
-    if (!data.activeTournament) {
-      return interaction.reply({ content: "No active tournament.", ephemeral: true });
-    }
+    const t = data.tournaments[name];
 
-    if (data.activeTournament.name !== interaction.options.getString("name")) {
+    if (!t) {
       return interaction.reply({ content: "Tournament not found.", ephemeral: true });
     }
 
     let desc = "";
 
-    data.registrations.forEach((team, i) => {
+    t.registrations.forEach((team, i) => {
       desc += `**• Slot ${i + 1}**\n`;
       desc += `Team: **${team.teamName}**\n`;
-      desc += `IGL: <@${team.leaderId}>\n\n`;
+      desc += `IGL: <@${team.leaderId}>\n`;
+      desc += `Players:\n${team.members.map(id => `<@${id}>`).join("\n")}\n\n`;
     });
 
     const embed = new EmbedBuilder()
-      .setTitle(`${data.activeTournament.name} Slots`)
-      .setDescription(desc || "No teams yet.")
+      .setTitle(`${t.name} Slots`)
+      .setDescription(desc || "No teams registered yet.")
       .setColor("Blue");
 
     await interaction.reply({ embeds: [embed] });

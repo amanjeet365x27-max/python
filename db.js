@@ -7,4 +7,19 @@ const pool = new Pool({
   }
 });
 
+// 🔥 AUTO CREATE TABLE
+(async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS tournaments (
+        name TEXT PRIMARY KEY,
+        data JSONB
+      );
+    `);
+    console.log("DB Ready");
+  } catch (err) {
+    console.error("DB Error:", err);
+  }
+})();
+
 module.exports = pool;

@@ -4,38 +4,30 @@ const tournament = require("./tournament");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("tclear")
-    .setDescription("Clear a tournament completely")
-    .addStringOption(opt =>
-      opt.setName("name")
-        .setDescription("Tournament name")
-        .setRequired(true)
+    .setDescription("Clear a tournament")
+    .addStringOption(option =>
+      option.setName("name").setDescription("Tournament name").setRequired(true)
     ),
 
   async execute(interaction) {
-    const data = tournament.getData();
+    const ADMIN_ID = "1488964288210272458";
+
+    if (interaction.user.id !== ADMIN_ID) {
+      return interaction.reply({ content: "Only admin can use this.", ephemeral: true });
+    }
+
     const name = interaction.options.getString("name");
 
-    const t = data.tournaments[name];
+    const data = await tournament.getData(); // ✅ FIXED
 
-    if (!t) {
-      return interaction.reply({ content: "Tournament not found.", ephemeral: true });
+    if (!data.tournaments || !data.tournaments[name]) {
+      return interaction.reply({ content: "Tournament not found", ephemeral: true });
     }
 
-    const guild = interaction.guild;
-
-    // 🔥 DELETE ROLES
-    for (let team of t.registrations) {
-      const role = guild.roles.cache.find(r => r.name === team.teamName);
-      if (role) {
-        await role.delete().catch(() => {});
-      }
-    }
-
-    // 🔥 DELETE TOURNAMENT
     delete data.tournaments[name];
 
-    tournament.saveData(data);
+    await tournament.saveData(data); // ✅ FIXED
 
-    await interaction.reply(`Tournament "${name}" cleared completely.`);
+    await interaction.reply(`Tournament **${name}** cleared successfully`);
   }
 };

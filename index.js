@@ -35,16 +35,16 @@ client.once("clientReady", async () => {
 });
 
 // ================= JOIN/LEAVE =================
-client.on("guildMemberAdd", (member) => {
+client.on("guildMemberAdd", () => {
   si.joins.push(Date.now());
   const now = Date.now();
-  si.joins = si.joins.filter((t) => now - t < 86400000 * 2);
+  si.joins = si.joins.filter(t => now - t < 86400000 * 2);
 });
 
-client.on("guildMemberRemove", (member) => {
+client.on("guildMemberRemove", () => {
   si.leaves.push(Date.now());
   const now = Date.now();
-  si.leaves = si.leaves.filter((t) => now - t < 86400000 * 2);
+  si.leaves = si.leaves.filter(t => now - t < 86400000 * 2);
 });
 
 // ================= COMMAND HANDLER =================
@@ -64,7 +64,6 @@ client.on("interactionCreate", async (interaction) => {
 client.on("messageCreate", async (message) => {
   const data = tournament.getData();
 
-  // stop if no tournament OR already full
   if (!data.activeTournament) return;
   if (data.registrations.length >= data.activeTournament.slots) return;
 
@@ -73,46 +72,47 @@ client.on("messageCreate", async (message) => {
 
   const content = message.content;
 
-  // format check
+  // ===== FORMAT CHECK =====
   if (!content.toLowerCase().startsWith("team name-")) {
     return message.reply("Use format: Team Name- xyz @mentions");
   }
 
+  // ===== CLEAN TEAM NAME (FIXED) =====
+  const raw = content.slice(10).trim(); // remove "Team Name-"
+  const teamName = raw.split("<@")[0].trim();
+
   const mentions = [...message.mentions.users.values()];
-  const teamName = content.split("Team Name-")[1]?.split("@")[0]?.trim();
 
   if (!teamName) {
-    return message.reply("Invalid team name format.");
+    return message.reply("Invalid team name.");
   }
 
-  // mention count check
+  // ===== MENTION COUNT =====
   if (mentions.length !== data.activeTournament.mentionsReq) {
     return message.reply(
       `You must mention exactly ${data.activeTournament.mentionsReq} players.`
     );
   }
 
-  // ✅ FIXED: duplicate check INCLUDING IGL
-  const allPlayers = [...mentions.map(m => m.id), message.author.id];
-
-  for (let id of allPlayers) {
-    const embed = tournament.getDuplicateEmbed(id);
-
+  // ===== DUPLICATE CHECK (FIXED EMBED) =====
+  for (let m of mentions) {
+    const embed = tournament.getDuplicateEmbed(m.id);
     if (embed) {
       return message.reply({ embeds: [embed] });
     }
   }
 
-  // save team (INCLUDING IGL)
+  // ===== SAVE TEAM (FIXED leaderId) =====
   data.registrations.push({
     teamName,
-    members: allPlayers
+    members: mentions.map(m => m.id),
+    leaderId: message.author.id
   });
 
-  // ✅ SAVE + CREATE ROLE
+  // ===== SAVE + ROLE =====
   await tournament.updateData(data, message);
 
-  // success embed
+  // ===== SUCCESS EMBED =====
   const successEmbed = {
     color: 0x00ff00,
     description: `**Registration Successful**`
@@ -120,7 +120,7 @@ client.on("messageCreate", async (message) => {
 
   await message.reply({ embeds: [successEmbed] });
 
-  // full check
+  // ===== FULL =====
   if (data.registrations.length >= data.activeTournament.slots) {
 
     const fullEmbed = {

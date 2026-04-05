@@ -1,20 +1,17 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const pool = require("./db");
 
-// ================= LOAD DATA =================
+// ================= LOAD =================
 async function loadData() {
   const res = await pool.query("SELECT * FROM tournaments");
-
   const tournaments = {};
-
   res.rows.forEach(row => {
     tournaments[row.name] = row.data;
   });
-
   return { tournaments };
 }
 
-// ================= SAVE DATA =================
+// ================= SAVE =================
 async function saveData(data) {
   for (let name in data.tournaments) {
     await pool.query(
@@ -31,21 +28,27 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName("tournament")
     .setDescription("Create a tournament")
-    .addStringOption(option =>
-      option.setName("name").setDescription("Tournament name").setRequired(true)
-    )
-    .addIntegerOption(option =>
-      option.setName("slots").setDescription("Total slots").setRequired(true)
-    )
-    .addIntegerOption(option =>
-      option.setName("mentions").setDescription("Mentions required").setRequired(true)
-    )
-    .addChannelOption(option =>
-      option.setName("channel").setDescription("Registration channel").setRequired(true)
+    .addStringOption(o =>
+      o.setName("name").setDescription("Tournament name").setRequired(true))
+    .addIntegerOption(o =>
+      o.setName("slots").setDescription("Total slots").setRequired(true))
+    .addIntegerOption(o =>
+      o.setName("mentions").setDescription("Mentions required").setRequired(true))
+    .addChannelOption(o =>
+      o.setName("channel").setDescription("Registration channel").setRequired(true))
+    // 🔥 NEW OPTION
+    .addStringOption(o =>
+      o.setName("pings")
+        .setDescription("Ping everyone or not")
+        .setRequired(true)
+        .addChoices(
+          { name: "yes", value: "yes" },
+          { name: "no", value: "no" }
+        )
     ),
 
   async execute(interaction) {
-    // 🔥 ADMIN ROLE CHECK (FIXED)
+    // ✅ ADMIN ROLE CHECK
     const ADMIN_ROLE_ID = "1488964288210272458";
     const member = await interaction.guild.members.fetch(interaction.user.id);
 
@@ -57,9 +60,9 @@ module.exports = {
     const slots = interaction.options.getInteger("slots");
     const mentions = interaction.options.getInteger("mentions");
     const channel = interaction.options.getChannel("channel");
+    const pings = interaction.options.getString("pings");
 
     const data = await loadData();
-
     if (!data.tournaments) data.tournaments = {};
 
     data.tournaments[name] = {
@@ -67,7 +70,8 @@ module.exports = {
       slots,
       mentions,
       channelId: channel.id,
-      registrations: []
+      registrations: [],
+      pings
     };
 
     await saveData(data);
@@ -84,14 +88,17 @@ module.exports = {
       .setImage("https://cdn.oneesports.id/cdn-data/sites/2/2024/12/462574290_1265728211300654_4514308865345103186_n.jpg");
 
     await interaction.reply({ embeds: [embed] });
+
+    // 🔥 PING OPTION
+    if (pings === "yes") {
+      await channel.send("@everyone @here");
+    }
   },
 
-  // ================= GET DATA =================
   async getData() {
     return await loadData();
   },
 
-  // ================= SAVE DATA =================
   async saveData(data) {
     await saveData(data);
   },

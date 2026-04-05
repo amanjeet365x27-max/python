@@ -23,7 +23,6 @@ module.exports = {
     .setName("tournament")
     .setDescription("Start tournament registration")
 
-    // ✅ ALL OPTIONS NOW HAVE DESCRIPTION (FIXED)
     .addStringOption(opt =>
       opt.setName("name")
         .setDescription("Tournament name")
@@ -70,20 +69,34 @@ module.exports = {
 
     saveData({ activeTournament, registrations });
 
-    // ===== EMBED =====
+    // ✅ EMBED WITH EXACT FORMAT
     const embed = new EmbedBuilder()
       .setTitle(name)
       .setDescription("Tournament Registration Open")
       .addFields(
-        { name: "Format", value: "Team Name- YOUR TEAM NAME
-          @mentions" },
-        { name: "Slots", value: `${slots}`, inline: true },
-        { name: "Players", value: `${mentionsReq}`, inline: true }
+        {
+          name: "Format",
+          value: "Team Name- YOUR TEAM NAME\n@mentions"
+        },
+        {
+          name: "Total Slots",
+          value: `${slots}`,
+          inline: true
+        },
+        {
+          name: "Players per Team",
+          value: `${mentionsReq}`,
+          inline: true
+        }
       )
       .setImage("https://cdn.oneesports.id/cdn-data/sites/2/2024/12/462574290_1265728211300654_4514308865345103186_n.jpg")
       .setColor("Red");
 
-    await interaction.reply({ content: `Started in ${channel}`, ephemeral: true });
+    await interaction.reply({
+      content: `Started in ${channel}`,
+      ephemeral: true
+    });
+
     await channel.send({ embeds: [embed] });
   },
 

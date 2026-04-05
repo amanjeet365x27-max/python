@@ -27,7 +27,6 @@ async function saveData(data) {
   }
 }
 
-// ================= COMMAND =================
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("tournament")
@@ -46,9 +45,11 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    const ADMIN_ID = "1488964288210272458";
+    // 🔥 ADMIN ROLE CHECK (FIXED)
+    const ADMIN_ROLE_ID = "1488964288210272458";
+    const member = await interaction.guild.members.fetch(interaction.user.id);
 
-    if (interaction.user.id !== ADMIN_ID) {
+    if (!member.roles.cache.has(ADMIN_ROLE_ID)) {
       return interaction.reply({ content: "Only admin can use this.", ephemeral: true });
     }
 
@@ -100,7 +101,7 @@ module.exports = {
     const content = message.content.trim();
 
     if (!content.toLowerCase().startsWith("team name-")) {
-      return "Use format: Team Name- xyz @mentions";
+      return "Use format:\nTeam Name- YOUR TEAM NAME\n@mentions";
     }
 
     const teamName = content.split("Team Name-")[1]?.split("\n")[0]?.trim();

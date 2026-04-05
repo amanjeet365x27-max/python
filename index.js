@@ -82,62 +82,67 @@ client.on("interactionCreate", async (interaction) => {
 client.on("messageCreate", async (message) => {
   const data = tournament.getData();
 
-  if (!data.activeTournament) return;
-  if (data.registrations.length >= data.activeTournament.slots) return;
-
-  if (message.channel.id !== data.activeTournament.channelId) return;
+  if (!data.tournaments) return;
   if (message.author.bot) return;
 
-  // ===== ✅ ONLY FIXED PART (VALIDATION) =====
-  const result = tournament.validateMessage(message, data);
+  for (let tName in data.tournaments) {
+    const t = data.tournaments[tName];
 
-  if (typeof result === "string") {
-    return message.reply(result);
-  }
+    // check channel match
+    if (message.channel.id !== t.channelId) continue;
 
-  const { teamName, mentions } = result;
+    // stop if full
+    if (t.registrations.length >= t.slots) return;
 
-  // ===== DUPLICATE CHECK =====
-  for (let m of mentions) {
-    const embed = tournament.getDuplicateEmbed(m);
-    if (embed) {
-      return message.reply({ embeds: [embed] });
+    const result = tournament.validate(message, t);
+
+    if (typeof result === "string") {
+      return message.reply(result);
     }
-  }
 
-  // ===== SAVE TEAM =====
-  data.registrations.push({
-    teamName,
-    members: mentions,
-    leaderId: message.author.id
-  });
+    // ===== DUPLICATE CHECK =====
+    for (let team of t.registrations) {
+      for (let id of result.members) {
+        if (team.members.includes(id)) {
+          return message.reply("Player already registered in another team");
+        }
+      }
+    }
 
-  // ===== SAVE + ROLE =====
-  await tournament.updateData(data, message);
+    // ===== SAVE TEAM =====
+    t.registrations.push({
+      teamName: result.teamName,
+      members: result.members,
+      leaderId: message.author.id
+    });
 
-  // ===== SUCCESS EMBED =====
-  const successEmbed = {
-    color: 0x00ff00,
-    description: `**Registration Successful**`
-  };
+    tournament.saveData(data);
 
-  await message.reply({ embeds: [successEmbed] });
+    // ===== SUCCESS =====
+    await message.reply({
+      embeds: [{
+        color: 0x00ff00,
+        description: "**Registration Successful**"
+      }]
+    });
 
-  // ===== FULL =====
-  if (data.registrations.length >= data.activeTournament.slots) {
+    // ===== FULL =====
+    if (t.registrations.length >= t.slots) {
+      await message.channel.send({
+        embeds: [{
+          color: 0xff0000,
+          title: "Registration Closed",
+          description: "All slots filled.\nRoadmap soon."
+        }]
+      });
 
-    const fullEmbed = {
-      color: 0xff0000,
-      title: "Registration Closed",
-      description: "All slots are filled.\nRoadmap will be announced soon."
-    };
+      await message.channel.permissionOverwrites.edit(
+        message.guild.roles.everyone,
+        { SendMessages: false }
+      );
+    }
 
-    await message.channel.send({ embeds: [fullEmbed] });
-
-    await message.channel.permissionOverwrites.edit(
-      message.guild.roles.everyone,
-      { SendMessages: false }
-    );
+    return; // stop after handling correct tournament
   }
 });
 

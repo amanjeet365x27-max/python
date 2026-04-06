@@ -19,7 +19,7 @@ module.exports = {
     if (!t) return interaction.reply({ content: "Tournament not found.", ephemeral: true });
 
     const totalSlots = t.slots;
-    const filledSlots = t.registrations.length;
+    const filledSlots = t.registrations ? t.registrations.length : 0;
     const remainingSlots = totalSlots - filledSlots;
 
     const embed = new EmbedBuilder()

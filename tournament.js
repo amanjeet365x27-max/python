@@ -111,8 +111,8 @@ module.exports = {
     if (!teamName) return "Invalid team name.";
 
     const mentions = message.mentions.users;
-    if (mentions.size !== t.mentions) return `You must mention exactly ${t.mentions} players (including yourself).`;
-    if (!mentions.has(message.author.id)) return "You must include yourself in mentions.";
+    if (mentions.size !== t.mentions) return `❌ **You must mention exactly ${t.mentions} players (including yourself).**\n\nExample: @player1 @player2 @player3 (if 3 mentions required)`;
+    if (!mentions.has(message.author.id)) return `❌ **You must include yourself in the mentions.**\n\nYou have to ping yourself along with other ${t.mentions - 1} players.`;
 
     return {
       teamName,
@@ -177,7 +177,7 @@ module.exports = {
 
     const slotsRemaining = t.slots - t.registrations.length;
 
-    // Success Embed (Kept exactly as you liked - with small green box)
+    // Success Embed (with GIF thumbnail as you wanted)
     const confirmEmbed = new EmbedBuilder()
       .setColor(0x00ff00)
       .setTitle("✅ Registration Confirmed!")

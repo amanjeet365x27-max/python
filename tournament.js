@@ -56,7 +56,7 @@ module.exports = {
     const slots = interaction.options.getInteger("slots");
     const mentions = interaction.options.getInteger("mentions");
     const channel = interaction.options.getChannel("channel");
-    const ping = interaction.options.getString("ping"); // ✅ added
+    const ping = interaction.options.getString("ping");
 
     const data = await loadData();
     if (!data.tournaments) data.tournaments = {};
@@ -78,12 +78,10 @@ module.exports = {
 
     await saveData(data);
 
-    // ------------- SEND PING FIRST (ONLY IF YES) -------------
     if (ping === "yes") {
       await channel.send({ content: "@everyone @here" });
     }
 
-    // ------------- OPEN CHANNEL FOR EVERYONE -------------
     await channel.permissionOverwrites.edit(
       interaction.guild.roles.everyone,
       { ViewChannel: true, SendMessages: true }

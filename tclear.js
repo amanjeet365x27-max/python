@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const tournament = require("./tournament");
-const pool = require("./db");   // <-- We use pool directly for clean delete
+const pool = require("./db"); // <-- We use pool directly for clean delete
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -11,25 +11,19 @@ module.exports = {
         .setDescription("Tournament name")
         .setRequired(true)
     ),
-
   async execute(interaction) {
     const ADMIN_ROLE_ID = "1488964288210272458";
     const member = await interaction.guild.members.fetch(interaction.user.id);
     if (!member.roles.cache.has(ADMIN_ROLE_ID)) {
       return interaction.reply({ content: "Only admin can use this.", ephemeral: true });
     }
-
     const name = interaction.options.getString("name").trim();
-
     // Load current data
     let data = await tournament.getData();
-
     if (!data.tournaments || !data.tournaments[name]) {
       return interaction.reply({ content: `Tournament **${name}** not found.`, ephemeral: true });
     }
-
     const t = data.tournaments[name];
-
     // 1. Delete team roles
     if (t.registrations && t.registrations.length > 0) {
       for (let reg of t.registrations) {
@@ -44,7 +38,6 @@ module.exports = {
         }
       }
     }
-
     // 2. HARD DELETE from database (this is the key change)
     try {
       await pool.query("DELETE FROM tournaments WHERE name = $1", [name]);
@@ -53,7 +46,6 @@ module.exports = {
       console.error("Database delete error:", e);
       return interaction.reply({ content: "Database error while clearing.", ephemeral: true });
     }
-
     // 3. Unlock the channel
     const channel = await interaction.guild.channels.fetch(t.channelId).catch(() => null);
     if (channel) {
@@ -65,19 +57,56 @@ module.exports = {
       } catch (e) {
         console.log("Unlock channel failed:", e.message);
       }
-
       const clearedEmbed = new EmbedBuilder()
         .setColor(0x00ff00)
         .setTitle("✅ Tournament Cleared")
         .setDescription(`Tournament **${name}** has been completely removed.\nYou can create a new tournament now.`)
         .setFooter({ text: `Cleared by ${interaction.user.tag}` });
-
       await channel.send({ embeds: [clearedEmbed] });
     }
 
-    await interaction.reply({ 
-      content: `✅ Tournament **${name}** has been **fully cleared** from the system!`, 
-      ephemeral: true 
+    // ================= NEW: DELETE TOURNAMENT CATEGORY + ALL MATCH CHANNELS =================
+    let deletedChannels = 0;
+    let deletedCategory = false;
+
+    // Try to find the category created by /tchannel
+    const categoryName = `Tournament - ${name}`;
+    const category = interaction.guild.channels.cache.find(c => 
+      c.type === 4 && c.name.toLowerCase() === categoryName.toLowerCase()
+    );
+
+    if (category) {
+      try {
+        // Delete all channels inside the category first
+        const children = category.children.cache;
+        for (const child of children.values()) {
+          try {
+            await child.delete(`Tournament ${name} cleared`);
+            deletedChannels++;
+          } catch (e) {
+            console.log(`Failed to delete channel ${child.name}:`, e.message);
+          }
+        }
+
+        // Then delete the category itself
+        await category.delete(`Tournament ${name} cleared`);
+        deletedCategory = true;
+      } catch (e) {
+        console.log(`Failed to delete category ${category.name}:`, e.message);
+      }
+    }
+
+    // Final reply with summary
+    let summary = `✅ Tournament **${name}** has been **fully cleared** from the system!`;
+    if (deletedCategory) {
+      summary += `\n🗑️ Deleted category + **${deletedChannels}** match channels.`;
+    } else if (deletedChannels > 0) {
+      summary += `\n🗑️ Deleted **${deletedChannels}** match channels.`;
+    }
+
+    await interaction.reply({
+      content: summary,
+      ephemeral: true
     });
   }
 };

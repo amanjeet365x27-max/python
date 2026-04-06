@@ -42,11 +42,12 @@ client.once("clientReady", async () => {
   }
 });
 
-// ================= JOIN/LEAVE TRACKING =================
+// ================= JOIN/LEAVE TRACKING FIXED =================
+// Use timestamps only, don't reset array incorrectly
 client.on("guildMemberAdd", () => {
   const now = Date.now();
   si.joins.push(now);
-  // Keep only joins in the last 24h
+  // Keep only timestamps from the last 24h
   si.joins = si.joins.filter(t => now - t < 86400000);
   console.log("Joins in last 24h:", si.joins.length);
 });

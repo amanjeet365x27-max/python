@@ -112,13 +112,25 @@ module.exports = {
 
     const mentions = message.mentions.users;
 
-    // FIXED: Proper check for exact number of mentions
+    // =================== FIXED MENTION CHECK ===================
     if (mentions.size !== t.mentions) {
-      return `❌ **Wrong number of mentions!**\n\nYou must mention **exactly ${t.mentions} players** (including yourself).\n\nExample: @yourself @player2`;
+      const embed = new EmbedBuilder()
+        .setColor(0xff0000)
+        .setTitle("❌ Wrong Number of Mentions!")
+        .setDescription(`You must mention **exactly ${t.mentions} players** (including yourself).`)
+        .setFooter({ text: "Make sure to include yourself in the mentions!" });
+
+      return { error: true, embed };
     }
 
     if (!mentions.has(message.author.id)) {
-      return `❌ **You must include yourself in the mentions!**\n\nYou have to ping yourself along with the other players.`;
+      const embed = new EmbedBuilder()
+        .setColor(0xff0000)
+        .setTitle("❌ You Must Include Yourself!")
+        .setDescription("You have to ping yourself along with the other players.")
+        .setFooter({ text: "Mention yourself as the team leader." });
+
+      return { error: true, embed };
     }
 
     return {
@@ -129,6 +141,9 @@ module.exports = {
 
   async register(message, t) {
     const result = this.validate(message, t);
+    if (result.error && result.embed) {
+      return message.reply({ embeds: [result.embed] });
+    }
     if (typeof result === "string") {
       return message.reply(result);
     }
@@ -184,7 +199,7 @@ module.exports = {
 
     const slotsRemaining = t.slots - t.registrations.length;
 
-    // Success Embed with GIF (as you wanted)
+    // Success Embed with GIF
     const confirmEmbed = new EmbedBuilder()
       .setColor(0x00ff00)
       .setTitle("✅ Registration Confirmed!")

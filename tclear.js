@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const tournament = require("./tournament");
+const pool = require("./db");   // <-- We use pool directly for clean delete
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -18,7 +19,9 @@ module.exports = {
       return interaction.reply({ content: "Only admin can use this.", ephemeral: true });
     }
 
-    const name = interaction.options.getString("name");
+    const name = interaction.options.getString("name").trim();
+
+    // Load current data
     let data = await tournament.getData();
 
     if (!data.tournaments || !data.tournaments[name]) {
@@ -27,7 +30,7 @@ module.exports = {
 
     const t = data.tournaments[name];
 
-    // ================= 1. DELETE TEAM ROLES =================
+    // 1. Delete team roles
     if (t.registrations && t.registrations.length > 0) {
       for (let reg of t.registrations) {
         const roleName = reg.teamName.replace(/[<>@]/g, "").trim();
@@ -35,21 +38,23 @@ module.exports = {
         if (role) {
           try {
             await role.delete("Tournament cleared");
-            console.log(`Deleted role: ${roleName}`);
           } catch (e) {
-            console.log(`Failed to delete role ${roleName}:`, e.message);
+            console.log(`Role delete failed for ${roleName}:`, e.message);
           }
         }
       }
     }
 
-    // ================= 2. DELETE TOURNAMENT FROM DATA =================
-    delete data.tournaments[name];
+    // 2. HARD DELETE from database (this is the key change)
+    try {
+      await pool.query("DELETE FROM tournaments WHERE name = $1", [name]);
+      console.log(`Hard deleted tournament: ${name} from DB`);
+    } catch (e) {
+      console.error("Database delete error:", e);
+      return interaction.reply({ content: "Database error while clearing.", ephemeral: true });
+    }
 
-    // Force save clean data
-    await tournament.saveData({ tournaments: data.tournaments || {} });
-
-    // ================= 3. UNLOCK CHANNEL =================
+    // 3. Unlock the channel
     const channel = await interaction.guild.channels.fetch(t.channelId).catch(() => null);
     if (channel) {
       try {
@@ -58,23 +63,21 @@ module.exports = {
           { SendMessages: true }
         );
       } catch (e) {
-        console.log("Failed to unlock channel:", e.message);
+        console.log("Unlock channel failed:", e.message);
       }
 
       const clearedEmbed = new EmbedBuilder()
-        .setColor(0xff0000)
-        .setTitle("**Tournament Cleared**")
-        .setDescription(`Tournament **${name}** has been successfully cleared.\nYou can now create a new tournament in this channel.`)
+        .setColor(0x00ff00)
+        .setTitle("✅ Tournament Cleared")
+        .setDescription(`Tournament **${name}** has been completely removed.\nYou can create a new tournament now.`)
         .setFooter({ text: `Cleared by ${interaction.user.tag}` });
 
       await channel.send({ embeds: [clearedEmbed] });
     }
 
     await interaction.reply({ 
-      content: `✅ Tournament **${name}** cleared successfully!`, 
+      content: `✅ Tournament **${name}** has been **fully cleared** from the system!`, 
       ephemeral: true 
     });
-
-    console.log(`Tournament "${name}" fully cleared.`);
   }
 };

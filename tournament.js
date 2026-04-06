@@ -152,11 +152,9 @@ module.exports = {
       reason: "Tournament Team Role"
     });
 
-    // Assign role to all members
-    for (let id of result.members) {
-      const member = await message.guild.members.fetch(id).catch(() => null);
-      if (member) await member.roles.add(role);
-    }
+    // Assign role to IGL only
+    const iglMember = await message.guild.members.fetch(message.author.id).catch(() => null);
+    if (iglMember) await iglMember.roles.add(role);
 
     // Save data
     const fullData = await this.getData();
@@ -172,7 +170,7 @@ module.exports = {
       .setDescription(
         `**Team:** ${result.teamName}\n` +
         `**Leader:** <@${message.author.id}>\n` +
-        `**Members:** ${result.members.map(id => `<@${id}>`).join(", ")}\n\n` +
+        `**Members:** \( {result.members.map(id => `<@ \){id}>`).join(", ")}\n\n` +
         `**Slots Remaining:** ${slotsRemaining} / ${t.slots}`
       )
       .setThumbnail("https://i.pinimg.com/originals/e8/06/52/e80652af2c77e3a73858e16b2ffe5f9a.gif");

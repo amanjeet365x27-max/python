@@ -94,8 +94,18 @@ module.exports = {
 
   validate(message, t) {
     const content = message.content.trim();
-    const match = content.match(/team\s*name\s*-\s*(.+)/i);
-    if (!match) return "Use format:\n**Team Name- YOUR TEAM NAME**\n@mentions";
+    const match = content.match(/team\s*name\s*[-:=\s]*\s*(.+)/i);
+    if (!match) {
+      const lines = content.split('\n');
+      const possibleTeamName = lines[0].trim();
+      if (possibleTeamName.length > 0) {
+        return {
+          teamName: possibleTeamName,
+          members: [...message.mentions.users.keys()]
+        };
+      }
+      return "Use format:\n**Team Name- YOUR TEAM NAME**\n@mentions";
+    }
 
     const teamName = match[1].split("\n")[0].trim();
     if (!teamName) return "Invalid team name.";
@@ -143,11 +153,15 @@ module.exports = {
       leaderId: message.author.id
     });
 
-    // ================= FIXED ROLE CREATION - ONLY CLEAN TEAM NAME =================
-    const cleanTeamName = result.teamName.replace(/[<>@#]/g, "").trim();
+    // ================= ROLE CREATION - USE TEAM NAME SAFELY =================
+    const cleanTeamName = result.teamName
+      .replace(/[<>@#]/g, "")           // remove dangerous chars
+      .replace(/[^a-zA-Z0-9\s-_]/g, "") // keep only letters, numbers, space, -, _
+      .trim()
+      .slice(0, 90);                    // safe limit for role name
 
     const role = await message.guild.roles.create({
-      name: cleanTeamName,           // Only team name, no extra junk
+      name: cleanTeamName || `Team ${t.registrations.length}`,
       mentionable: true,
       reason: "Tournament Team Role"
     });

@@ -28,6 +28,8 @@ module.exports = {
 
   async execute(interaction) {
     const ADMIN_ROLE_ID = "1488964288210272458";
+    const SPECIAL_ROLE_ID = "1449832147161448721"; // ✅ added
+
     const member = await interaction.guild.members.fetch(interaction.user.id);
 
     if (!member.roles.cache.has(ADMIN_ROLE_ID)) {
@@ -35,7 +37,7 @@ module.exports = {
     }
 
     const name = interaction.options.getString("name");
-    const mode = interaction.options.getString("mode"); // "CS" or "BR"
+    const mode = interaction.options.getString("mode");
     const startTimeStr = interaction.options.getString("start_time");
     const gapMinutes = interaction.options.getInteger("gap");
 
@@ -53,7 +55,6 @@ module.exports = {
     const registrations = t.registrations;
     const teamsPerMatch = mode === "BR" ? 12 : 2;
 
-    // ================= PARSE START TIME AS IST (UTC+5:30) =================
     const [hours, minutes] = startTimeStr.split(":").map(Number);
     const nowUTC = new Date();
     let utcHours = hours - 5;
@@ -87,6 +88,15 @@ module.exports = {
         {
           id: interaction.guild.roles.everyone.id,
           deny: [PermissionsBitField.Flags.ViewChannel]
+        },
+        {
+          id: SPECIAL_ROLE_ID,
+          allow: [
+            PermissionsBitField.Flags.ViewChannel,
+            PermissionsBitField.Flags.SendMessages,
+            PermissionsBitField.Flags.ManageMessages,
+            PermissionsBitField.Flags.MentionEveryone
+          ]
         }
       ]
     });
@@ -108,11 +118,19 @@ module.exports = {
           {
             id: interaction.guild.roles.everyone.id,
             deny: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages]
+          },
+          {
+            id: SPECIAL_ROLE_ID,
+            allow: [
+              PermissionsBitField.Flags.ViewChannel,
+              PermissionsBitField.Flags.SendMessages,
+              PermissionsBitField.Flags.ManageMessages,
+              PermissionsBitField.Flags.MentionEveryone
+            ]
           }
         ]
       });
 
-      // Give access to all teams in this match
       const pingRoles = [];
       
       for (const team of matchTeams) {
@@ -129,10 +147,8 @@ module.exports = {
         }
       }
 
-      // Calculate this match's timing
       const thisMatchTimestamp = currentMatchTimestamp + (matchNum - 1) * gapMinutes * 60;
 
-      // ================= BUILD MATCH EMBED =================
       let desc = `**Match ${matchNum}** • **${mode}**\n\n`;
 
       if (mode === "CS") {
@@ -151,7 +167,7 @@ module.exports = {
           desc += `**Players:** ${team1.members.map(id => `<@${id}>`).join(", ")}\n\n`;
         }
       } 
-      else { // BR Mode
+      else {
         desc += `**${matchTeams.length} Teams**\n\n`;
         
         matchTeams.forEach((team, index) => {
@@ -174,7 +190,6 @@ module.exports = {
         .setImage("https://official.garena.com/intl/v1/config/gallery_esport01.jpg")
         .setTimestamp();
 
-      // Ping all participating team roles
       const pingContent = pingRoles.length ? pingRoles.join(" ") : "@everyone";
 
       await matchChannel.send({

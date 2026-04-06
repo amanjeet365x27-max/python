@@ -65,43 +65,58 @@ module.exports = {
       await channel.send({ embeds: [clearedEmbed] });
     }
 
-    // ================= NEW: DELETE TOURNAMENT CATEGORY + ALL MATCH CHANNELS =================
+    // ================= FIXED: DELETE ALL CATEGORIES + MATCH CHANNELS =================
+    let deletedCategories = 0;
     let deletedChannels = 0;
-    let deletedCategory = false;
 
-    // Try to find the category created by /tchannel
-    const categoryName = `Tournament - ${name}`;
-    const category = interaction.guild.channels.cache.find(c => 
-      c.type === 4 && c.name.toLowerCase() === categoryName.toLowerCase()
+    const targetName = `Tournament - ${name}`.toLowerCase();
+
+    // Find all categories that match the tournament name (handles multiple + mode suffix like (CS))
+    const categoriesToDelete = interaction.guild.channels.cache.filter(c => 
+      c.type === 4 && c.name.toLowerCase().startsWith(targetName)
     );
 
-    if (category) {
+    for (const category of categoriesToDelete.values()) {
       try {
-        // Delete all channels inside the category first
+        // Delete all children first
         const children = category.children.cache;
         for (const child of children.values()) {
           try {
             await child.delete(`Tournament ${name} cleared`);
             deletedChannels++;
           } catch (e) {
-            console.log(`Failed to delete channel ${child.name}:`, e.message);
+            console.log(`Failed to delete child channel ${child.name}:`, e.message);
           }
         }
 
-        // Then delete the category itself
+        // Delete the category
         await category.delete(`Tournament ${name} cleared`);
-        deletedCategory = true;
+        deletedCategories++;
       } catch (e) {
         console.log(`Failed to delete category ${category.name}:`, e.message);
       }
     }
 
+    // Extra safety: Delete any leftover match-* channels that might not be in the category
+    const leftoverMatchChannels = interaction.guild.channels.cache.filter(c => 
+      c.type === 0 && c.name.toLowerCase().startsWith("match-") && 
+      !c.parent && c.name.toLowerCase().includes(name.toLowerCase().replace(/ /g, '-'))
+    );
+
+    for (const ch of leftoverMatchChannels.values()) {
+      try {
+        await ch.delete(`Tournament ${name} cleared (leftover)`);
+        deletedChannels++;
+      } catch (e) {
+        console.log(`Failed to delete leftover channel ${ch.name}:`, e.message);
+      }
+    }
+
     // Final reply with summary
     let summary = `✅ Tournament **${name}** has been **fully cleared** from the system!`;
-    if (deletedCategory) {
-      summary += `\n🗑️ Deleted category + **${deletedChannels}** match channels.`;
-    } else if (deletedChannels > 0) {
-      summary += `\n🗑️ Deleted **${deletedChannels}** match channels.`;
+    
+    if (deletedCategories > 0 || deletedChannels > 0) {
+      summary += `\n🗑️ Deleted **${deletedCategories}** category(s) and **${deletedChannels}** channel(s).`;
     }
 
     await interaction.reply({

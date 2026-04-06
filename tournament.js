@@ -69,6 +69,12 @@ module.exports = {
 
     await saveData(data);
 
+    // ------------- OPEN CHANNEL FOR EVERYONE -------------
+    await channel.permissionOverwrites.edit(
+      interaction.guild.roles.everyone,
+      { ViewChannel: true, SendMessages: true }
+    );
+
     const embed = new EmbedBuilder()
       .setColor(0x00ff99)
       .setTitle("**Tournament REGISTRATION[OPEN]**")
@@ -80,7 +86,8 @@ module.exports = {
       )
       .setImage("https://cdn.oneesports.id/cdn-data/sites/2/2024/12/462574290_1265728211300654_4514308865345103186_n.jpg");
 
-    const msg = await interaction.reply({ embeds: [embed], fetchReply: true });
+    // ------------ SEND EMBED IN TARGET CHANNEL, NOT WHERE COMMAND RUNS ------------
+    const msg = await channel.send({ embeds: [embed] });
     await msg.reply({ content: "@everyone @here" });
   },
 
@@ -98,7 +105,6 @@ module.exports = {
 
     const mentions = message.mentions.users;
 
-    // ---------- FORCE EXACT MENTION COUNT ----------
     if (!mentions || mentions.size !== t.mentions) {
       const embed = new EmbedBuilder()
         .setColor(0xff0000)
@@ -109,7 +115,6 @@ module.exports = {
       return { error: true, embed };
     }
 
-    // ---------- LEADER MUST BE INCLUDED ----------
     if (!mentions.has(message.author.id)) {
       const embed = new EmbedBuilder()
         .setColor(0xff0000)
@@ -120,7 +125,6 @@ module.exports = {
       return { error: true, embed };
     }
 
-    // ---------- TEAM NAME PARSING ----------
     let teamName;
     if (match) {
       teamName = match[1].split("\n")[0].trim();
@@ -146,7 +150,6 @@ module.exports = {
       return message.reply(result);
     }
 
-    // ---------- CHECK ALREADY REGISTERED ----------
     for (let i = 0; i < t.registrations.length; i++) {
       const team = t.registrations[i];
       const alreadyInTeam = result.members.filter(id => team.members.includes(id));
@@ -166,14 +169,12 @@ module.exports = {
       }
     }
 
-    // ---------- SAVE TEAM ----------
     t.registrations.push({
       teamName: result.teamName,
       members: result.members,
       leaderId: message.author.id
     });
 
-    // ================= ROLE CREATION =================
     const cleanTeamName = result.teamName
       .replace(/[<>@#]/g, "")
       .replace(/[^a-zA-Z0-9\s-_]/g, "")
@@ -189,14 +190,12 @@ module.exports = {
     const iglMember = await message.guild.members.fetch(message.author.id).catch(() => null);
     if (iglMember) await iglMember.roles.add(role);
 
-    // ---------- SAVE DATA ----------
     const fullData = await this.getData();
     fullData.tournaments[t.name] = t;
     await this.saveData(fullData);
 
     const slotsRemaining = t.slots - t.registrations.length;
 
-    // ---------- SUCCESS EMBED ----------
     const confirmEmbed = new EmbedBuilder()
       .setColor(0x00ff00)
       .setTitle("✅ Registration Confirmed!")
@@ -210,8 +209,12 @@ module.exports = {
 
     await message.channel.send({ embeds: [confirmEmbed] });
 
-    // ---------- CLOSE REGISTRATION IF FULL ----------
     if (t.registrations.length >= t.slots) {
+      await message.channel.permissionOverwrites.edit(
+        message.guild.roles.everyone,
+        { SendMessages: false, ViewChannel: true }
+      );
+
       const closeEmbed = new EmbedBuilder()
         .setColor(0xff0000)
         .setTitle("🛑 Registration Closed")
@@ -219,11 +222,6 @@ module.exports = {
         .setImage("https://official.garena.com/intl/v1/config/gallery_esport01.jpg");
 
       await message.channel.send({ embeds: [closeEmbed] });
-
-      await message.channel.permissionOverwrites.edit(
-        message.guild.roles.everyone,
-        { SendMessages: false }
-      );
     }
   }
 };

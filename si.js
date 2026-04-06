@@ -46,8 +46,6 @@ module.exports = {
         { name: "🧑 Humans", value: `\`${humans}\``, inline: true },
         { name: "🤖 Bots", value: `\`${bots}\``, inline: true },
         { name: "🟢 Online", value: `\`${online}\``, inline: true },
-        { name: "📥 Joins (24h)", value: `\`${last24hJoins}\``, inline: true },
-        { name: "📤 Leaves (24h)", value: `\`${last24hLeaves}\``, inline: true }
       )
       .setFooter({ text: "⚡ Powered by HEROIC HUSTLE" })
       .setTimestamp();

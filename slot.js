@@ -29,7 +29,7 @@ module.exports = {
 
     let description = "";
     t.registrations.forEach((team, i) => {
-      description += `**Slot ${i + 1}** – Team: **${team.teamName}**, IGL: <@${team.leaderId}>\n`;
+      description += `**Slot ${i + 1} – Team: ${team.teamName}, IGL: <@${team.leaderId}>**\n`;
     });
 
     const embed = new EmbedBuilder()

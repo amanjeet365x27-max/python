@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const pool = require('../db'); // your PostgreSQL pool connection
+const pool = require('../db'); // your Postgres connection
 
 module.exports = {
     data: new SlashCommandBuilder()

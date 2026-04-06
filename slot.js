@@ -14,6 +14,7 @@ module.exports = {
   async execute(interaction) {
     const ADMIN_ROLE_ID = "1488964288210272458";
     const member = await interaction.guild.members.fetch(interaction.user.id);
+
     if (!member.roles.cache.has(ADMIN_ROLE_ID)) {
       return interaction.reply({ content: "Only admin can use this.", ephemeral: true });
     }
@@ -21,21 +22,22 @@ module.exports = {
     const name = interaction.options.getString("name");
     const data = await tournament.getData();
     const t = data.tournaments[name];
+
     if (!t) return interaction.reply({ content: "Tournament not found.", ephemeral: true });
 
     if (!t.registrations || t.registrations.length === 0) {
       return interaction.reply({ content: "No teams registered yet.", ephemeral: true });
     }
 
-    let description = "";
+    let desc = "";
     t.registrations.forEach((team, i) => {
-      description += `**Slot ${i + 1} – Team: ${team.teamName}, IGL: <@${team.leaderId}>**\n`;
+      desc += `**• Slot ${i + 1}**\n**Team:** ${team.teamName}\n**IGL:** <@${team.leaderId}>\n\n`;
     });
 
     const embed = new EmbedBuilder()
       .setColor(0x00ffff)
-      .setTitle(`**Slots Info – ${t.name}**`)
-      .setDescription(description);
+      .setTitle(`**Slots - ${t.name}**`)
+      .setDescription(desc);
 
     await interaction.reply({ embeds: [embed] });
   }

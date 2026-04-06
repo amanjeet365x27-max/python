@@ -20,7 +20,7 @@ module.exports = {
 
     const name = interaction.options.getString("name");
 
-    const data = await tournament.getData();
+    const data = await tournament.getData(); // fetch live data from Postgres
 
     if (!data.tournaments || !data.tournaments[name]) {
       return interaction.reply({ content: "Tournament not found", ephemeral: true });

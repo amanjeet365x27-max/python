@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const pool = require("./db");
 
-// ================= LOAD =================
+// ================= LOAD DATA =================
 async function loadData() {
   const res = await pool.query("SELECT * FROM tournaments");
   const tournaments = {};
@@ -11,7 +11,7 @@ async function loadData() {
   return { tournaments };
 }
 
-// ================= SAVE =================
+// ================= SAVE DATA =================
 async function saveData(data) {
   for (let name in data.tournaments) {
     await pool.query(
@@ -52,18 +52,21 @@ module.exports = {
     const data = await loadData();
     if (!data.tournaments) data.tournaments = {};
 
+    // Prevent duplicate tournament in same channel
     for (let tName in data.tournaments) {
       if (data.tournaments[tName].channelId === channel.id) {
         return interaction.reply({ content: "A tournament already exists in this channel.", ephemeral: true });
       }
     }
 
+    // Create tournament with createdAt timestamp
     data.tournaments[name] = {
       name,
       slots,
       mentions,
       channelId: channel.id,
       registrations: [],
+      createdAt: Date.now()
     };
 
     await saveData(data);
@@ -91,6 +94,7 @@ module.exports = {
     await saveData(data);
   },
 
+  // ================= VALIDATE MESSAGE =================
   validate(message, t) {
     const content = message.content.trim();
     const match = content.match(/team\s*name\s*-\s*(.+)/i);
@@ -115,13 +119,14 @@ module.exports = {
     };
   },
 
+  // ================= REGISTER TEAM =================
   async register(message, t) {
     const result = this.validate(message, t);
     if (typeof result === "string") {
       return message.reply(result);
     }
 
-    // Check already registered
+    // Check if any player is already in another team
     for (let i = 0; i < t.registrations.length; i++) {
       const team = t.registrations[i];
       const alreadyInTeam = result.members.filter(id => team.members.includes(id));
@@ -141,14 +146,14 @@ module.exports = {
       }
     }
 
-    // Save team
+    // Save the team
     t.registrations.push({
       teamName: result.teamName,
       members: result.members,
       leaderId: message.author.id
     });
 
-    // Create role
+    // Create role and assign members
     const role = await message.guild.roles.create({
       name: result.teamName.replace(/[<>@]/g, ""),
       mentionable: true
@@ -159,12 +164,12 @@ module.exports = {
       if (member) await member.roles.add(role);
     }
 
-    // Save data
+    // Save updated data
     const fullData = await this.getData();
     fullData.tournaments[t.name] = t;
     await this.saveData(fullData);
 
-    // ================= SUCCESS EMBED - Small GIF (as you want) =================
+    // ================= SUCCESS EMBED - Small GIF =================
     const slotsRemaining = t.slots - t.registrations.length;
 
     const confirmEmbed = new EmbedBuilder()
@@ -176,21 +181,21 @@ module.exports = {
         `**Members:** ${result.members.map(id => `<@${id}>`).join(", ")}\n\n` +
         `**Slots Remaining:** ${slotsRemaining} / ${t.slots}`
       )
-      .setImage("https://i.pinimg.com/originals/e8/06/52/e80652af2c77e3a73858e16b2ffe5f9a.gif"); // Small success GIF
+      .setImage("https://i.pinimg.com/originals/e8/06/52/e80652af2c77e3a73858e16b2ffe5f9a.gif"); // Small GIF
 
     await message.channel.send({ embeds: [confirmEmbed] });
 
-    // ================= CLOSED EMBED - Big GIF (as you want) =================
+    // ================= CLOSED EMBED - Big GIF =================
     if (t.registrations.length >= t.slots) {
       const closeEmbed = new EmbedBuilder()
         .setColor(0xff0000)
         .setTitle("🛑 Registration Closed")
         .setDescription("All slots are filled. Registration is now closed.")
-        .setImage("https://media.tenor.com/znjmPw_FF3sAAAAM/close.gif"); // Big closed GIF
+        .setImage("https://media.tenor.com/znjmPw_FF3sAAAAM/close.gif"); // Big GIF
 
       await message.channel.send({ embeds: [closeEmbed] });
 
-      // Lock channel
+      // Lock the channel
       await message.channel.permissionOverwrites.edit(
         message.guild.roles.everyone,
         { SendMessages: false }

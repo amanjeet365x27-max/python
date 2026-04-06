@@ -38,13 +38,13 @@ client.once("clientReady", async () => {
   ];
   const rest = new REST({ version: "10" }).setToken(TOKEN);
   try {
-    // Clear old global commands (this removes the duplicates)
+    // Clear ALL old global commands (this removes duplicates)
     await rest.put(
       Routes.applicationCommands(CLIENT_ID),
       { body: [] }
     );
 
-    // Register fresh commands only in your server
+    // Register clean commands only in your server
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: commands }

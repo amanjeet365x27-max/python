@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const pool = require("./db");
 
-// ================= LOAD =================
+// ================= LOAD DATA =================
 async function loadData() {
   const res = await pool.query("SELECT * FROM tournaments");
   const tournaments = {};
@@ -11,7 +11,7 @@ async function loadData() {
   return { tournaments };
 }
 
-// ================= SAVE =================
+// ================= SAVE DATA =================
 async function saveData(data) {
   for (let name in data.tournaments) {
     await pool.query(
@@ -71,8 +71,8 @@ module.exports = {
 
     const embed = new EmbedBuilder()
       .setColor(0x00ff99)
-      .setTitle("**REGISTRATION[OPEN]**")
-      .setDescription(`**${name}** REGISTRATION STARTED`)
+      .setTitle("**Tournament Created!**")
+      .setDescription(`**${name}** has started registration.`)
       .addFields(
         { name: "Total Slots", value: `${slots}`, inline: true },
         { name: "Mentions Required", value: `${mentions}`, inline: true },
@@ -104,23 +104,34 @@ module.exports = {
     if (mentions.size !== t.mentions) return `You must mention exactly ${t.mentions} players (including yourself).`;
     if (!mentions.has(message.author.id)) return "You must include yourself in mentions.";
 
-    return { teamName, members: [...mentions.keys()] };
+    return {
+      teamName,
+      members: [...mentions.keys()]
+    };
   },
 
   async register(message, t) {
     const result = this.validate(message, t);
-    if (typeof result === "string") return message.reply(result);
+    if (typeof result === "string") {
+      return message.reply(result);
+    }
 
-    // Already registered check
+    // Check for already registered players
     for (let i = 0; i < t.registrations.length; i++) {
       const team = t.registrations[i];
-      const already = result.members.filter(id => team.members.includes(id));
-      if (already.length > 0) {
-        return message.reply({ embeds: [{ color: 0xff0000, title: "Player Already Registered", description: `Players already in another team:\n${already.map(id => `<@${id}>`).join(", ")}` }] });
+      const alreadyInTeam = result.members.filter(id => team.members.includes(id));
+      if (alreadyInTeam.length > 0) {
+        return message.reply({
+          embeds: [{
+            color: 0xff0000,
+            title: "Player Already Registered",
+            description: `The following player(s) are already in another team:\n${alreadyInTeam.map(id => `<@${id}>`).join(", ")}`
+          }]
+        });
       }
     }
 
-    // Register team
+    // Register the team
     t.registrations.push({
       teamName: result.teamName,
       members: result.members,
@@ -138,14 +149,14 @@ module.exports = {
       if (member) await member.roles.add(role);
     }
 
-    // Save
+    // Save data
     const fullData = await this.getData();
     fullData.tournaments[t.name] = t;
     await this.saveData(fullData);
 
     const slotsRemaining = t.slots - t.registrations.length;
 
-    // ================= SUCCESS EMBED - Compact like Promo (Small Image) =================
+    // ================= SUCCESS EMBED - Thumbnail (Small on right) =================
     const confirmEmbed = new EmbedBuilder()
       .setColor(0x00ff00)
       .setTitle("✅ Registration Confirmed!")
@@ -155,21 +166,21 @@ module.exports = {
         `**Members:** ${result.members.map(id => `<@${id}>`).join(", ")}\n\n` +
         `**Slots Remaining:** ${slotsRemaining} / ${t.slots}`
       )
-      .setImage("https://i.pinimg.com/originals/e8/06/52/e80652af2c77e3a73858e16b2ffe5f9a.gif"); // Small GIF - Compact
+      .setThumbnail("https://i.pinimg.com/originals/e8/06/52/e80652af2c77e3a73858e16b2ffe5f9a.gif"); // Small image as thumbnail on right
 
     await message.channel.send({ embeds: [confirmEmbed] });
 
-    // ================= CLOSED EMBED - Big & Prominent like old Success =================
+    // ================= CLOSED EMBED - Big Image =================
     if (t.registrations.length >= t.slots) {
       const closeEmbed = new EmbedBuilder()
         .setColor(0xff0000)
         .setTitle("🛑 Registration Closed")
         .setDescription("All slots are filled. Registration is now closed.")
-        .setImage("https://i.pinimg.com/originals/e8/06/52/e80652af2c77e3a73858e16b2ffe5f9a.gif"); // ← Big success style image (change link if you want different one)
+        .setImage("https://official.garena.com/intl/v1/config/gallery_esport01.jpg"); // Your big closed image
 
       await message.channel.send({ embeds: [closeEmbed] });
 
-      // Lock channel
+      // Lock the channel
       await message.channel.permissionOverwrites.edit(
         message.guild.roles.everyone,
         { SendMessages: false }

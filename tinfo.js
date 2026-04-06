@@ -18,18 +18,18 @@ module.exports = {
 
     if (!t) return interaction.reply({ content: "Tournament not found.", ephemeral: true });
 
-    const totalSlots = t.slots;
-    const filledSlots = t.registrations ? t.registrations.length : 0;
-    const remainingSlots = totalSlots - filledSlots;
+    const total = t.slots;
+    const filled = t.registrations ? t.registrations.length : 0;
+    const remaining = total - filled;
 
     const embed = new EmbedBuilder()
       .setColor(0xff9900)
-      .setTitle(`**Tournament Info – ${t.name}**`)
+      .setTitle(`**Tournament Info - ${t.name}**`)
       .setDescription(
         `**Channel:** <#${t.channelId}>\n` +
-        `**Total Slots:** ${totalSlots}\n` +
-        `**Slots Filled:** ${filledSlots}\n` +
-        `**Slots Remaining:** ${remainingSlots}`
+        `**Total Slots:** ${total}\n` +
+        `**Filled Slots:** ${filled}\n` +
+        `**Remaining Slots:** ${remaining}`
       );
 
     await interaction.reply({ embeds: [embed] });

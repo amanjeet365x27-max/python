@@ -27,7 +27,6 @@ client.once("clientReady", async () => {
   activities: [{ name: "HEROIC HUSTLE KI JAY", type: 0 }],
   status: "online"
 });
-
   const commands = [
     si.data.toJSON(),
     tournament.data.toJSON(),
@@ -37,17 +36,15 @@ client.once("clientReady", async () => {
     tchannel.data.toJSON(),
     winner.data.toJSON()
   ];
-
   const rest = new REST({ version: "10" }).setToken(TOKEN);
-
   try {
-    // Clear global commands (this removes the duplicates)
+    // Clear old global commands (this removes the duplicates)
     await rest.put(
       Routes.applicationCommands(CLIENT_ID),
       { body: [] }
     );
 
-    // Register only in your server (fast & no duplicates)
+    // Register fresh commands only in your server
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: commands }

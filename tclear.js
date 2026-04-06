@@ -37,14 +37,14 @@ module.exports = {
     }
 
     // ================= STOP REGISTRATION =================
-    t.registrations = [];
+    t.registrations = null; // mark tournament as cleared to prevent further registration
 
     // ================= DELETE TOURNAMENT =================
     delete data.tournaments[name];
     await tournament.saveData(data);
 
     await interaction.reply({
-      content: `Tournament **${name}** cleared successfully. All roles deleted, registrations stopped.`
+      content: `Tournament **${name}** cleared successfully.\nAll roles deleted, registrations stopped.`
     });
   }
 };

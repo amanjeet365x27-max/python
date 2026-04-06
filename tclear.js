@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require("discord.js");
-const tournament = require("./tournament"); // ONLY required, no db here
+const tournament = require("./tournament"); // only required, no DB here
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -27,9 +27,9 @@ module.exports = {
     const t = data.tournaments[name];
 
     // ================= DELETE ALL TEAM ROLES =================
-    for (let team of t.registrations) {
+    for (let team of t.registrations || []) {
       try {
-        const role = interaction.guild.roles.cache.find(r => r.name === team.teamName);
+        const role = interaction.guild.roles.cache.find(r => r.name === team.teamName.replace(/[<>@]/g, ""));
         if (role) await role.delete("Tournament cleared");
       } catch (e) {
         console.log("Role delete error:", e);
@@ -37,14 +37,14 @@ module.exports = {
     }
 
     // ================= STOP REGISTRATION =================
-    t.registrations = null; // prevent further registration
+    if (t.registrations) t.registrations = null; // prevent further registration
 
     // ================= DELETE TOURNAMENT =================
     delete data.tournaments[name];
     await tournament.saveData(data);
 
     await interaction.reply({
-      content: `Tournament **${name}** cleared successfully.\nAll roles deleted, registrations stopped.`
+      content: `Tournament **${name}** cleared successfully.\nAll team roles deleted and registrations stopped.`
     });
   }
 };

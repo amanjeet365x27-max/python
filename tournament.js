@@ -53,6 +53,13 @@ module.exports = {
     const data = await loadData();
     if (!data.tournaments) data.tournaments = {};
 
+    // Only allow 1 tournament per server
+    for (let tName in data.tournaments) {
+      if (data.tournaments[tName].channelId === channel.id) {
+        return interaction.reply({ content: "A tournament already exists in this channel.", ephemeral: true });
+      }
+    }
+
     data.tournaments[name] = {
       name,
       slots,
@@ -74,7 +81,9 @@ module.exports = {
       )
       .setImage("https://cdn.oneesports.id/cdn-data/sites/2/2024/12/462574290_1265728211300654_4514308865345103186_n.jpg");
 
-    await interaction.reply({ content: "@everyone @here", embeds: [embed] });
+    // Send the embed first, then reply with @everyone/@here ping
+    const msg = await interaction.reply({ embeds: [embed], fetchReply: true });
+    await msg.reply({ content: "@everyone @here" });
   },
 
   async getData() {
@@ -110,10 +119,13 @@ module.exports = {
   },
 
   async register(message, t) {
+    const result = this.validate(message, t);
+    if (typeof result === "string") return message.reply(result);
+
     // ================= ALREADY REGISTERED =================
     for (let i = 0; i < t.registrations.length; i++) {
       const team = t.registrations[i];
-      const alreadyInTeam = t.registrations[i].members.filter(id => message.mentions.users.has(id));
+      const alreadyInTeam = result.members.filter(id => team.members.includes(id));
 
       if (alreadyInTeam.length > 0) {
         const memberMentions = team.members.map(id => `<@${id}>`).join(", ");
@@ -134,7 +146,6 @@ module.exports = {
     }
 
     // ================= SAVE TEAM =================
-    const result = this.validate(message, t);
     t.registrations.push({
       teamName: result.teamName,
       members: result.members,

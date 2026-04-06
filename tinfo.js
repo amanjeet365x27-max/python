@@ -22,7 +22,7 @@ module.exports = {
       });
     }
 
-    // ================= SINGLE TOURNAMENT =================
+    // ================= SINGLE TOURNAMENT INFO =================
     if (name) {
       const t = data.tournaments[name];
       if (!t) {
@@ -32,6 +32,9 @@ module.exports = {
       const total = t.slots || 0;
       const filled = t.registrations ? t.registrations.length : 0;
       const remaining = total - filled;
+      const createdTime = t.createdAt 
+        ? `<t:${Math.floor(t.createdAt / 1000)}:R>` 
+        : "Unknown";
 
       const embed = new EmbedBuilder()
         .setColor(0xff9900)
@@ -40,7 +43,8 @@ module.exports = {
           `**Channel:** <#${t.channelId}>\n` +
           `**Total Slots:** ${total}\n` +
           `**Filled Slots:** ${filled}\n` +
-          `**Remaining Slots:** ${remaining}`
+          `**Remaining Slots:** ${remaining}\n` +
+          `**Created:** ${createdTime}`
         )
         .addFields(
           {
@@ -52,18 +56,18 @@ module.exports = {
           }
         )
         .setFooter({ text: "Use /slot to see detailed team list" })
-        .setTimestamp();   // shows when this info was fetched
+        .setTimestamp();
 
       return interaction.reply({ embeds: [embed] });
     }
 
-    // ================= ALL ACTIVE TOURNAMENTS =================
+    // ================= ALL ACTIVE TOURNAMENTS LIST =================
     const embed = new EmbedBuilder()
       .setColor(0x00ff99)
       .setTitle("**Active Tournaments on Server**")
       .setDescription("Here are all currently active tournaments:");
 
-    let description = "";
+    let desc = "";
 
     for (let tName in data.tournaments) {
       const t = data.tournaments[tName];
@@ -71,15 +75,19 @@ module.exports = {
       const filled = t.registrations ? t.registrations.length : 0;
       const remaining = total - filled;
       const status = remaining > 0 ? "🟢 Open" : "🔴 Closed";
+      const createdTime = t.createdAt 
+        ? `<t:${Math.floor(t.createdAt / 1000)}:R>` 
+        : "Unknown";
 
-      description += `**${t.name}**\n` +
-                     `Channel: <#${t.channelId}>\n` +
-                     `Slots: ${filled}/${total} (${remaining} remaining)\n` +
-                     `Status: ${status}\n\n`;
+      desc += `**${t.name}**\n` +
+              `**Channel:** <#${t.channelId}>\n` +
+              `**Slots:** ${filled}/${total} (${remaining} remaining)\n` +
+              `**Status:** ${status}\n` +
+              `**Created:** ${createdTime}\n\n`;
     }
 
-    embed.setDescription(description || "No active tournaments.");
-    embed.setFooter({ text: "Created times are shown below each tournament if needed" });
+    embed.setDescription(desc);
+    embed.setFooter({ text: "Use /tinfo name:TOURNAMENT_NAME for detailed view • /slot for team list" });
     embed.setTimestamp();
 
     await interaction.reply({ embeds: [embed] });

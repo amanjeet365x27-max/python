@@ -1,31 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
-const pool = require("./db");
 const tournament = require("./tournament");
-
-async function loadData() {
-  const res = await pool.query("SELECT * FROM tournaments");
-  const tournaments = {};
-  res.rows.forEach(row => {
-    tournaments[row.name] = row.data;
-  });
-  return { tournaments };
-}
-
-async function saveData(data) {
-  for (let name in data.tournaments) {
-    await pool.query(
-      `INSERT INTO tournaments (name, data)
-       VALUES ($1, $2)
-       ON CONFLICT (name)
-       DO UPDATE SET data = $2`,
-      [name, data.tournaments[name]]
-    );
-  }
-}
-
-async function deleteTournament(name) {
-  await pool.query("DELETE FROM tournaments WHERE name=$1", [name]);
-}
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -43,7 +17,7 @@ module.exports = {
     }
 
     const name = interaction.options.getString("name");
-    const data = await loadData();
+    const data = await tournament.getData();
 
     if (!data.tournaments[name]) {
       return interaction.reply({ content: `Tournament **${name}** does not exist.`, ephemeral: true });
@@ -52,17 +26,19 @@ module.exports = {
     const t = data.tournaments[name];
 
     // ================= REMOVE TEAM ROLES =================
-    for (let reg of t.registrations) {
-      const roleName = reg.teamName.replace(/[<>@]/g, "");
-      const role = interaction.guild.roles.cache.find(r => r.name === roleName);
-      if (role) {
-        try { await role.delete("Tournament cleared"); } catch (e) { console.log(e); }
+    if (t.registrations) {
+      for (let reg of t.registrations) {
+        const roleName = reg.teamName.replace(/[<>@]/g, "");
+        const role = interaction.guild.roles.cache.find(r => r.name === roleName);
+        if (role) {
+          try { await role.delete("Tournament cleared"); } catch (e) { console.log(e); }
+        }
       }
     }
 
     // ================= DELETE TOURNAMENT =================
     delete data.tournaments[name];
-    await saveData(data);
+    await tournament.saveData(data);
 
     // ================= SEND EMBED =================
     const embed = new EmbedBuilder()

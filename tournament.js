@@ -143,11 +143,11 @@ module.exports = {
       leaderId: message.author.id
     });
 
-    // ================= FIXED: Create role with clean team name only =================
+    // ================= FIXED ROLE CREATION - ONLY CLEAN TEAM NAME =================
     const cleanTeamName = result.teamName.replace(/[<>@#]/g, "").trim();
 
     const role = await message.guild.roles.create({
-      name: cleanTeamName,
+      name: cleanTeamName,           // Only team name, no extra junk
       mentionable: true,
       reason: "Tournament Team Role"
     });
@@ -168,12 +168,12 @@ module.exports = {
       .setColor(0x00ff00)
       .setTitle("✅ Registration Confirmed!")
       .setDescription(
-        `**Team:** ${result.teamName}\n` +
-        `**Leader:** <@${message.author.id}>\n` +
-        `**Members:** \( {result.members.map(id => `<@ \){id}>`).join(", ")}\n\n` +
-        `**Slots Remaining:** ${slotsRemaining} / ${t.slots}`
+        "**Team:** " + result.teamName + "\n" +
+        "**Leader:** <@" + message.author.id + ">\n" +
+        "**Members:** " + result.members.map(id => "<@" + id + ">").join(", ") + "\n\n" +
+        "**Slots Remaining:** " + slotsRemaining + " / " + t.slots
       )
-      .setImage("https://i.pinimg.com/originals/e8/06/52/e80652af2c77e3a73858e16b2ffe5f9a.gif");
+      .setThumbnail("https://i.pinimg.com/originals/e8/06/52/e80652af2c77e3a73858e16b2ffe5f9a.gif");
 
     await message.channel.send({ embeds: [confirmEmbed] });
 

@@ -20,6 +20,10 @@ const client = new Client({
 
 client.once("clientReady", async () => {
   console.log(`Logged in as ${client.user.tag}`);
+  client.user.setPresence({
+  activities: [{ name: "TOURNAMENT BOT DEVELOPED BY HEROIC HUSTLE", type: 0 }],
+  status: "online"
+});
   const commands = [
     si.data.toJSON(),
     tournament.data.toJSON(),

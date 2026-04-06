@@ -116,7 +116,7 @@ module.exports = {
       return message.reply(result);
     }
 
-    // Check for already registered players
+    // Check already registered
     for (let i = 0; i < t.registrations.length; i++) {
       const team = t.registrations[i];
       const alreadyInTeam = result.members.filter(id => team.members.includes(id));
@@ -131,19 +131,23 @@ module.exports = {
       }
     }
 
-    // Register the team
+    // Save team
     t.registrations.push({
       teamName: result.teamName,
       members: result.members,
       leaderId: message.author.id
     });
 
-    // Create role
+    // ================= FIXED ROLE CREATION - ONLY CLEAN TEAM NAME =================
+    const cleanTeamName = result.teamName.replace(/[<>@#]/g, "").trim();
+
     const role = await message.guild.roles.create({
-      name: result.teamName.replace(/[<>@]/g, ""),
-      mentionable: true
+      name: cleanTeamName,           // Only team name, no extra junk
+      mentionable: true,
+      reason: "Tournament Team Role"
     });
 
+    // Assign role to all members
     for (let id of result.members) {
       const member = await message.guild.members.fetch(id).catch(() => null);
       if (member) await member.roles.add(role);
@@ -156,7 +160,7 @@ module.exports = {
 
     const slotsRemaining = t.slots - t.registrations.length;
 
-    // ================= SUCCESS EMBED - Thumbnail (Small on right) =================
+    // Success Embed (Kept exactly as you liked - with small green box)
     const confirmEmbed = new EmbedBuilder()
       .setColor(0x00ff00)
       .setTitle("✅ Registration Confirmed!")
@@ -166,21 +170,20 @@ module.exports = {
         `**Members:** ${result.members.map(id => `<@${id}>`).join(", ")}\n\n` +
         `**Slots Remaining:** ${slotsRemaining} / ${t.slots}`
       )
-      .setThumbnail("https://i.pinimg.com/originals/e8/06/52/e80652af2c77e3a73858e16b2ffe5f9a.gif"); // Small image as thumbnail on right
+      .setImage("https://i.pinimg.com/originals/e8/06/52/e80652af2c77e3a73858e16b2ffe5f9a.gif");
 
     await message.channel.send({ embeds: [confirmEmbed] });
 
-    // ================= CLOSED EMBED - Big Image =================
+    // Closed Embed
     if (t.registrations.length >= t.slots) {
       const closeEmbed = new EmbedBuilder()
         .setColor(0xff0000)
         .setTitle("🛑 Registration Closed")
         .setDescription("All slots are filled. Registration is now closed.")
-        .setImage("https://official.garena.com/intl/v1/config/gallery_esport01.jpg"); // Your big closed image
+        .setImage("https://official.garena.com/intl/v1/config/gallery_esport01.jpg");
 
       await message.channel.send({ embeds: [closeEmbed] });
 
-      // Lock the channel
       await message.channel.permissionOverwrites.edit(
         message.guild.roles.everyone,
         { SendMessages: false }

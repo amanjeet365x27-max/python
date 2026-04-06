@@ -170,7 +170,7 @@ module.exports = {
         `**Members:** ${result.members.map(id => `<@${id}>`).join(", ")}\n\n` +
         `**Slots Remaining:** ${slotsRemaining} / ${t.slots}`
       )
-      .setImage("https://i.pinimg.com/originals/e8/06/52/e80652af2c77e3a73858e16b2ffe5f9a.gif");
+      .setThumbnail("https://i.pinimg.com/originals/e8/06/52/e80652af2c77e3a73858e16b2ffe5f9a.gif");
 
     await message.channel.send({ embeds: [confirmEmbed] });
 

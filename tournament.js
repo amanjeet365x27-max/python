@@ -52,7 +52,6 @@ module.exports = {
     const data = await loadData();
     if (!data.tournaments) data.tournaments = {};
 
-    // Check if tournament already exists in this channel
     for (let tName in data.tournaments) {
       if (data.tournaments[tName].channelId === channel.id) {
         return interaction.reply({ content: "A tournament already exists in this channel.", ephemeral: true });
@@ -92,11 +91,8 @@ module.exports = {
     await saveData(data);
   },
 
-  // ================= VALIDATE REGISTRATION =================
   validate(message, t) {
     const content = message.content.trim();
-    
-    // Improved regex: accepts "Team Name-", "team name-", "Team name-", etc.
     const match = content.match(/team\s*name\s*-\s*(.+)/i);
     if (!match) {
       return "Use format:\n**Team Name- YOUR TEAM NAME**\n@mentions";
@@ -119,14 +115,13 @@ module.exports = {
     };
   },
 
-  // ================= REGISTER TEAM =================
   async register(message, t) {
     const result = this.validate(message, t);
     if (typeof result === "string") {
       return message.reply(result);
     }
 
-    // Check if any player is already registered in another team
+    // Check already registered
     for (let i = 0; i < t.registrations.length; i++) {
       const team = t.registrations[i];
       const alreadyInTeam = result.members.filter(id => team.members.includes(id));
@@ -146,14 +141,14 @@ module.exports = {
       }
     }
 
-    // Save team registration
+    // Save team
     t.registrations.push({
       teamName: result.teamName,
       members: result.members,
       leaderId: message.author.id
     });
 
-    // Create role and assign to members
+    // Create role
     const role = await message.guild.roles.create({
       name: result.teamName.replace(/[<>@]/g, ""),
       mentionable: true
@@ -164,12 +159,12 @@ module.exports = {
       if (member) await member.roles.add(role);
     }
 
-    // FIXED: Properly save full data
+    // Save data
     const fullData = await this.getData();
     fullData.tournaments[t.name] = t;
     await this.saveData(fullData);
 
-    // ================= CONFIRMATION EMBED (as you requested) =================
+    // ================= SUCCESS EMBED - Small GIF (as you want) =================
     const slotsRemaining = t.slots - t.registrations.length;
 
     const confirmEmbed = new EmbedBuilder()
@@ -181,21 +176,21 @@ module.exports = {
         `**Members:** ${result.members.map(id => `<@${id}>`).join(", ")}\n\n` +
         `**Slots Remaining:** ${slotsRemaining} / ${t.slots}`
       )
-      .setImage("https://i.pinimg.com/originals/e8/06/52/e80652af2c77e3a73858e16b2ffe5f9a.gif"); // small gif at top
+      .setImage("https://i.pinimg.com/originals/e8/06/52/e80652af2c77e3a73858e16b2ffe5f9a.gif"); // Small success GIF
 
     await message.channel.send({ embeds: [confirmEmbed] });
 
-    // ================= CLOSE REGISTRATION IF FULL =================
+    // ================= CLOSED EMBED - Big GIF (as you want) =================
     if (t.registrations.length >= t.slots) {
       const closeEmbed = new EmbedBuilder()
         .setColor(0xff0000)
         .setTitle("🛑 Registration Closed")
         .setDescription("All slots are filled. Registration is now closed.")
-        .setImage("https://media.tenor.com/znjmPw_FF3sAAAAM/close.gif"); // big gif at bottom
+        .setImage("https://media.tenor.com/znjmPw_FF3sAAAAM/close.gif"); // Big closed GIF
 
       await message.channel.send({ embeds: [closeEmbed] });
 
-      // Lock channel (read only)
+      // Lock channel
       await message.channel.permissionOverwrites.edit(
         message.guild.roles.everyone,
         { SendMessages: false }

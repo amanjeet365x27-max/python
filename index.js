@@ -44,14 +44,12 @@ client.on("guildMemberAdd", () => {
   const now = Date.now();
   si.joins.push(now);
   si.joins = si.joins.filter(t => now - t < 86400000);
-  console.log("Joins in last 24h:", si.joins.length);
 });
 
 client.on("guildMemberRemove", () => {
   const now = Date.now();
   si.leaves.push(now);
   si.leaves = si.leaves.filter(t => now - t < 86400000);
-  console.log("Leaves in last 24h:", si.leaves.length);
 });
 
 // ================= COMMAND HANDLER =================
@@ -64,26 +62,26 @@ client.on("interactionCreate", async (interaction) => {
   if (interaction.commandName === "tclear") await tclear.execute(interaction);
 });
 
-// ================= MESSAGE LISTENER (FIXED) =================
+// ================= MESSAGE LISTENER - FIXED (No unwanted replies) =================
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
   const data = await tournament.getData();
-  if (!data.tournaments) return;
+  if (!data.tournaments || Object.keys(data.tournaments).length === 0) return;
 
   for (let tName in data.tournaments) {
     const t = data.tournaments[tName];
 
     if (message.channel.id !== t.channelId) continue;
 
-    // Fixed: Check if tournament is full AFTER finding the correct channel
+    // If full → stay completely silent
     if (t.registrations && t.registrations.length >= t.slots) {
-      return message.reply("❌ Registration is already closed for this tournament.");
+      return;
     }
 
-    // Process registration
+    // Only register if slots are open
     await tournament.register(message, t);
-    return; // Stop checking other tournaments
+    return;
   }
 });
 

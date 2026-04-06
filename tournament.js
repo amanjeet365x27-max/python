@@ -69,6 +69,9 @@ module.exports = {
 
     await saveData(data);
 
+    // ------------- SEND PING FIRST -------------
+    const pingMsg = await channel.send({ content: "@everyone @here" });
+
     // ------------- OPEN CHANNEL FOR EVERYONE -------------
     await channel.permissionOverwrites.edit(
       interaction.guild.roles.everyone,
@@ -86,9 +89,8 @@ module.exports = {
       )
       .setImage("https://cdn.oneesports.id/cdn-data/sites/2/2024/12/462574290_1265728211300654_4514308865345103186_n.jpg");
 
-    // ------------ SEND EMBED IN TARGET CHANNEL, NOT WHERE COMMAND RUNS ------------
-    const msg = await channel.send({ embeds: [embed] });
-    await msg.reply({ content: "@everyone @here" });
+    await channel.send({ embeds: [embed] });
+    await interaction.reply({ content: "✅ Tournament registration started!", ephemeral: true });
   },
 
   async getData() {
@@ -210,6 +212,7 @@ module.exports = {
     await message.channel.send({ embeds: [confirmEmbed] });
 
     if (t.registrations.length >= t.slots) {
+      // Close channel sending but keep viewable
       await message.channel.permissionOverwrites.edit(
         message.guild.roles.everyone,
         { SendMessages: false, ViewChannel: true }

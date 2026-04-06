@@ -81,9 +81,9 @@ module.exports = {
       )
       .setImage("https://cdn.oneesports.id/cdn-data/sites/2/2024/12/462574290_1265728211300654_4514308865345103186_n.jpg");
 
-    // Send embed first
+    // Send the embed first
     const msg = await interaction.reply({ embeds: [embed], fetchReply: true });
-    // Then ping everyone and here in reply to embed
+    // Reply with @everyone and @here
     await msg.reply({ content: "@everyone @here" });
   },
 

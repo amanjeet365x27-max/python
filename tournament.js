@@ -35,16 +35,7 @@ module.exports = {
     .addIntegerOption(o =>
       o.setName("mentions").setDescription("Mentions required").setRequired(true))
     .addChannelOption(o =>
-      o.setName("channel").setDescription("Registration channel").setRequired(true))
-    .addStringOption(o =>
-      o.setName("pings")
-        .setDescription("Ping everyone or not")
-        .setRequired(true)
-        .addChoices(
-          { name: "yes", value: "yes" },
-          { name: "no", value: "no" }
-        )
-    ),
+      o.setName("channel").setDescription("Registration channel").setRequired(true)),
 
   async execute(interaction) {
     const ADMIN_ROLE_ID = "1488964288210272458";
@@ -58,7 +49,6 @@ module.exports = {
     const slots = interaction.options.getInteger("slots");
     const mentions = interaction.options.getInteger("mentions");
     const channel = interaction.options.getChannel("channel");
-    const pings = interaction.options.getString("pings");
 
     const data = await loadData();
     if (!data.tournaments) data.tournaments = {};
@@ -68,16 +58,21 @@ module.exports = {
       slots,
       mentions,
       channelId: channel.id,
-      registrations: [],
-      pings
+      registrations: []
     };
 
     await saveData(data);
 
+    // ================= TOURNAMENT CREATED EMBED =================
     const embed = new EmbedBuilder()
       .setColor(0x00ff99)
-      .setTitle("Tournament Created")
-      .setDescription(`Name: **${name}**`)
+      .setTitle("**Tournament Created & Registration Started!**")
+      .setDescription(
+        `Tournament **${name}** is now open. Claim your spots fast!\n\n` +
+        `Use the following format to register your team:\n` +
+        `**Team Name- YOUR TEAM NAME**\n` +
+        `@mention your team members (including yourself)`
+      )
       .addFields(
         { name: "Slots", value: `${slots}`, inline: true },
         { name: "Mentions Required", value: `${mentions}`, inline: true },
@@ -85,26 +80,8 @@ module.exports = {
       )
       .setImage("https://cdn.oneesports.id/cdn-data/sites/2/2024/12/462574290_1265728211300654_4514308865345103186_n.jpg");
 
-    await interaction.reply({ embeds: [embed] });
-
-    // 🔥 PING FIX: send registration started embed
-    if (pings === "yes") {
-      const startEmbed = new EmbedBuilder()
-        .setColor(0x00ff99)
-        .setTitle("**Tournament Registration Started!**")
-        .setDescription(
-          `Tournament **${name}** has started. Claim your spots fast!\n\n` +
-          `Use the following format to register your team:\n` +
-          `**Team Name- YOUR TEAM NAME**\n` +
-          `@mention your team members (including yourself)`
-        );
-
-      await channel.send({
-        content: "@everyone @here",
-        embeds: [startEmbed],
-        allowedMentions: { parse: ["everyone", "here"] }
-      });
-    }
+    await channel.send({ content: "@everyone @here", embeds: [embed] });
+    await interaction.reply({ content: "Tournament created and registration started!", ephemeral: true });
   },
 
   async getData() {
@@ -115,7 +92,6 @@ module.exports = {
     await saveData(data);
   },
 
-  // ================= VALIDATE =================
   validate(message, t) {
     const content = message.content.trim();
 

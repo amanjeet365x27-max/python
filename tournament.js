@@ -116,26 +116,34 @@ module.exports = {
       return message.reply(result);
     }
 
+    // Check already registered
     for (let i = 0; i < t.registrations.length; i++) {
       const team = t.registrations[i];
       const alreadyInTeam = result.members.filter(id => team.members.includes(id));
       if (alreadyInTeam.length > 0) {
-        return message.reply({
-          embeds: [{
-            color: 0xff0000,
-            title: "❌ Player Already Registered",
-            description: `The following player(s) are already in another team:\n\( {alreadyInTeam.map(id => `<@ \){id}>`).join(", ")}`
-          }]
-        });
+        const conflictEmbed = new EmbedBuilder()
+          .setColor(0xff0000)
+          .setTitle("❌ Player Already Registered")
+          .setDescription("One or more players are already part of another team.")
+          .addFields(
+            { name: "Team Name", value: `\`${team.teamName}\``, inline: true },
+            { name: "Slot Number", value: `${i + 1}`, inline: true },
+            { name: "IGL (Registered By)", value: `<@${team.leaderId}>`, inline: true },
+            { name: "Affected Player(s)", value: alreadyInTeam.map(id => `<@${id}>`).join("\n") }
+          );
+
+        return message.reply({ embeds: [conflictEmbed] });
       }
     }
 
+    // Save team
     t.registrations.push({
       teamName: result.teamName,
       members: result.members,
       leaderId: message.author.id
     });
 
+    // ================= FIXED: Create role with clean team name only =================
     const cleanTeamName = result.teamName.replace(/[<>@#]/g, "").trim();
 
     const role = await message.guild.roles.create({
@@ -144,17 +152,18 @@ module.exports = {
       reason: "Tournament Team Role"
     });
 
-    for (let id of result.members) {
-      const member = await message.guild.members.fetch(id).catch(() => null);
-      if (member) await member.roles.add(role);
-    }
+    // Assign role to IGL only
+    const iglMember = await message.guild.members.fetch(message.author.id).catch(() => null);
+    if (iglMember) await iglMember.roles.add(role);
 
+    // Save data
     const fullData = await this.getData();
     fullData.tournaments[t.name] = t;
     await this.saveData(fullData);
 
     const slotsRemaining = t.slots - t.registrations.length;
 
+    // Success Embed (Kept exactly as you liked - with small green box)
     const confirmEmbed = new EmbedBuilder()
       .setColor(0x00ff00)
       .setTitle("✅ Registration Confirmed!")
@@ -168,6 +177,7 @@ module.exports = {
 
     await message.channel.send({ embeds: [confirmEmbed] });
 
+    // Closed Embed
     if (t.registrations.length >= t.slots) {
       const closeEmbed = new EmbedBuilder()
         .setColor(0xff0000)

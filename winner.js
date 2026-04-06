@@ -60,11 +60,11 @@ module.exports = {
       console.error("Failed to create winner role:", e.message);
     }
 
-    // Clean Winner Embed - No placeholders
+    // Winner Embed - Cleaned spacing
     const winnerEmbed = new EmbedBuilder()
       .setColor(0xffd700)
       .setTitle("🏆 CHAMPIONS CROWNED 🏆")
-      .setDescription(`**\( {teamName}** has emerged victorious in ** \){tournamentName}**!`)
+      .setDescription(`**${teamName}** has emerged victorious in **${tournamentName}**!`)
       .addFields(
         { name: "👑 Winning Team", value: `**${teamName}**`, inline: true },
         { name: "🎮 IGL", value: `<@${iglUser.id}>`, inline: true }
@@ -74,7 +74,7 @@ module.exports = {
       .setTimestamp();
 
     await interaction.reply({
-      content: `🎉 **Congratulations \( {teamName}!** <@ \){iglUser.id}>`,
+      content: `🎉 Congratulations **${teamName}**! <@${iglUser.id}> 🏆`,
       embeds: [winnerEmbed]
     });
   }

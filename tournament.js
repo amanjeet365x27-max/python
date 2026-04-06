@@ -89,16 +89,18 @@ module.exports = {
 
     await interaction.reply({ embeds: [embed] });
 
-    // 🔥 PING OPTION FIXED: send registration started message
+    // 🔥 PING OPTION FIXED: send registration started embed
     if (pings === "yes") {
-      await channel.send({
-        content: "@everyone @here",
-        embeds: [{
-          color: 0x00ff99,
-          title: "**Tournament Registration Started!**",
-          description: `Tournament **${name}** has started. Claim your spots fast!\n\nUse the format:\n**Team Name- YOUR TEAM NAME**\n@mention your team members (including yourself).`
-        }]
-      });
+      const startEmbed = new EmbedBuilder()
+        .setColor(0x00ff99)
+        .setTitle("**Tournament Registration Started!**")
+        .setDescription(
+          `Tournament **${name}** has started. Claim your spots fast!\n\n` +
+          `Use the following format to register your team:\n` +
+          `**Team Name- YOUR TEAM NAME**\n` +
+          `@mention your team members (including yourself)`
+        );
+      await channel.send({ content: "@everyone @here", embeds: [startEmbed] });
     }
   },
 

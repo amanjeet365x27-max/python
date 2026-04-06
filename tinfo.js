@@ -1,41 +1,57 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
-const tournament = require("./tournament");
+const pool = require("./db");
+
+async function loadData() {
+  const res = await pool.query("SELECT * FROM tournaments");
+  const tournaments = {};
+  res.rows.forEach(row => {
+    tournaments[row.name] = row.data;
+  });
+  return { tournaments };
+}
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("tinfo")
-    .setDescription("Show all running tournaments"),
+    .setDescription("Show tournament info")
+    .addStringOption(o =>
+      o.setName("name")
+       .setDescription("Tournament name")
+       .setRequired(true)),
 
   async execute(interaction) {
-    // 🔥 ADMIN CHECK
-    const ADMIN_ROLE_ID = "1488964288210272458";
-    const member = await interaction.guild.members.fetch(interaction.user.id);
+    const name = interaction.options.getString("name");
+    const data = await loadData();
 
-    if (!member.roles.cache.has(ADMIN_ROLE_ID)) {
-      return interaction.reply({ content: "Only admin can use this.", ephemeral: true });
+    if (!data.tournaments[name]) {
+      return interaction.reply({ content: `Tournament **${name}** not found.`, ephemeral: true });
     }
 
-    const data = await tournament.getData(); // fetch live data from Postgres
-
-    if (!data.tournaments || Object.keys(data.tournaments).length === 0) {
-      return interaction.reply({ content: "No tournaments running", ephemeral: true });
-    }
-
-    let desc = "";
-
-    for (let name in data.tournaments) {
-      const t = data.tournaments[name];
-
-      desc += `• **${name}**\n`;
-      desc += `Channel: <#${t.channelId}>\n`;
-      desc += `Slots: ${t.registrations.length}/${t.slots}\n\n`;
-    }
-
+    const t = data.tournaments[name];
     const embed = new EmbedBuilder()
-      .setColor(0x0099ff)
-      .setTitle("Active Tournaments")
-      .setDescription(desc);
+      .setColor(0x00ff99)
+      .setTitle(`**Tournament Info: ${t.name}**`)
+      .addFields(
+        { name: "**Total Slots**", value: `${t.slots}`, inline: true },
+        { name: "**Mentions Required**", value: `${t.mentions}`, inline: true },
+        { name: "**Channel**", value: `<#${t.channelId}>`, inline: true }
+      );
+
+    if (t.registrations.length > 0) {
+      embed.addFields({
+        name: "**Registered Teams**",
+        value: t.registrations.map((reg, i) => 
+          `**${i + 1}. ${reg.teamName}** - Leader: <@${reg.leaderId}>\nMembers: ${reg.members.map(id => `<@${id}>`).join(", ")}`
+        ).join("\n\n")
+      });
+    } else {
+      embed.addFields({ name: "**Registered Teams**", value: "No teams yet." });
+    }
 
     await interaction.reply({ embeds: [embed] });
+  },
+
+  async update(guildId) {
+    // Optional function to update tinfo dynamically if needed
   }
 };

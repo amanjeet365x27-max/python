@@ -81,7 +81,6 @@ module.exports = {
     }
 
     embed.setDescription(desc);
-    embed.setFooter({ text: "Use /tinfo name:TOURNAMENT_NAME for more details" });
     embed.setTimestamp();
 
     await interaction.reply({ embeds: [embed] });

@@ -89,9 +89,16 @@ module.exports = {
 
     await interaction.reply({ embeds: [embed] });
 
-    // 🔥 PING OPTION
+    // 🔥 PING OPTION FIXED: send registration started message
     if (pings === "yes") {
-      await channel.send("@everyone @here");
+      await channel.send({
+        content: "@everyone @here",
+        embeds: [{
+          color: 0x00ff99,
+          title: "**Tournament Registration Started!**",
+          description: `Tournament **${name}** has started. Claim your spots fast!\n\nUse the format:\n**Team Name- YOUR TEAM NAME**\n@mention your team members (including yourself).`
+        }]
+      });
     }
   },
 

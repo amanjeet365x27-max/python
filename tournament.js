@@ -53,7 +53,6 @@ module.exports = {
     const data = await loadData();
     if (!data.tournaments) data.tournaments = {};
 
-    // Only allow 1 tournament per channel
     for (let tName in data.tournaments) {
       if (data.tournaments[tName].channelId === channel.id) {
         return interaction.reply({ content: "A tournament already exists in this channel.", ephemeral: true });
@@ -81,9 +80,7 @@ module.exports = {
       )
       .setImage("https://cdn.oneesports.id/cdn-data/sites/2/2024/12/462574290_1265728211300654_4514308865345103186_n.jpg");
 
-    // Send the embed first
     const msg = await interaction.reply({ embeds: [embed], fetchReply: true });
-    // Reply with @everyone and @here
     await msg.reply({ content: "@everyone @here" });
   },
 
@@ -97,21 +94,15 @@ module.exports = {
 
   validate(message, t) {
     const content = message.content.trim();
-    if (!content.toLowerCase().startsWith("team name-")) {
-      return "Use format:\nTeam Name- YOUR TEAM NAME\n@mentions";
-    }
+    const match = content.match(/team name\s*-\s*(.+)/i); // flexible Team Name
+    if (!match) return "Use format:\nTeam Name- YOUR TEAM NAME\n@mentions";
 
-    const teamName = content.split("Team Name-")[1]?.split("\n")[0]?.trim();
+    const teamName = match[1].split("\n")[0].trim();
     if (!teamName) return "Invalid team name.";
 
     const mentions = message.mentions.users;
-    if (mentions.size !== t.mentions) {
-      return `You must mention exactly ${t.mentions} players (including yourself).`;
-    }
-
-    if (!mentions.has(message.author.id)) {
-      return "You must include yourself in mentions.";
-    }
+    if (mentions.size !== t.mentions) return `You must mention exactly ${t.mentions} players (including yourself).`;
+    if (!mentions.has(message.author.id)) return "You must include yourself in mentions.";
 
     return {
       teamName,
@@ -127,20 +118,17 @@ module.exports = {
     for (let i = 0; i < t.registrations.length; i++) {
       const team = t.registrations[i];
       const alreadyInTeam = result.members.filter(id => team.members.includes(id));
-
       if (alreadyInTeam.length > 0) {
-        const memberMentions = team.members.map(id => `<@${id}>`).join(", ");
         return message.reply({
           embeds: [{
             color: 0xff0000,
             title: "Player Already Registered",
-            description:
-              `The following player(s) are already in another team:\n` +
+            description: `The following player(s) are already in another team:\n` +
               `${alreadyInTeam.map(id => `<@${id}>`).join(", ")}\n\n` +
               `**Team Name:** ${team.teamName}\n` +
               `**Slot:** ${i + 1}\n` +
               `**Leader:** <@${team.leaderId}>\n` +
-              `**All Members:** ${memberMentions}`
+              `**All Members:** ${team.members.map(id => `<@${id}>`).join(", ")}`
           }]
         });
       }
@@ -166,11 +154,11 @@ module.exports = {
 
     await this.saveData({ tournaments: { ...t } });
 
-    // ================= EMBED SLOT TRACKING =================
+    // ================= CONFIRMATION EMBED =================
     const slotsRemaining = t.slots - t.registrations.length;
     const embed = new EmbedBuilder()
       .setColor(0x00ff00)
-      .setTitle("**Registration Successful!**")
+      .setTitle("✅ Registration Confirmed!")
       .setDescription(
         `**Team:** ${result.teamName}\n` +
         `**Leader:** <@${message.author.id}>\n` +
@@ -180,31 +168,14 @@ module.exports = {
 
     await message.channel.send({ embeds: [embed] });
 
-    // ================= LOG TO LOG CHANNEL =================
-    const logChannel = await message.guild.channels.fetch("1432382503104282815");
-    if (logChannel) {
-      const logEmbed = new EmbedBuilder()
-        .setColor(0x0099ff)
-        .setTitle("Tournament Registration Log")
-        .setDescription(
-          `**Tournament:** ${t.name}\n` +
-          `**Team:** ${result.teamName}\n` +
-          `**Leader:** <@${message.author.id}>\n` +
-          `**Members:** ${result.members.map(id => `<@${id}>`).join(", ")}\n` +
-          `**Slot Filled:** ${t.registrations.length} / ${t.slots}`
-        );
-      await logChannel.send({ embeds: [logEmbed] });
-    }
-
     // ================= CLOSE REGISTRATION IF FULL =================
     if (t.registrations.length >= t.slots) {
-      await message.channel.send({
-        embeds: [{
-          color: 0xff0000,
-          title: "Registration Closed",
-          description: "All slots filled. Roadmap coming soon."
-        }]
-      });
+      const closeEmbed = new EmbedBuilder()
+        .setColor(0xff0000)
+        .setTitle("🛑 Registration Closed")
+        .setDescription("All slots are filled. Registration is now closed.");
+
+      await message.channel.send({ embeds: [closeEmbed] });
 
       await message.channel.permissionOverwrites.edit(
         message.guild.roles.everyone,

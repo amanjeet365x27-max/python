@@ -1,57 +1,37 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
-const pool = require("./db");
-
-async function loadData() {
-  const res = await pool.query("SELECT * FROM tournaments");
-  const tournaments = {};
-  res.rows.forEach(row => {
-    tournaments[row.name] = row.data;
-  });
-  return { tournaments };
-}
+const tournament = require("./tournament");
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("tinfo")
-    .setDescription("Show tournament info")
+    .setDescription("Show info of a tournament")
     .addStringOption(o =>
       o.setName("name")
-       .setDescription("Tournament name")
-       .setRequired(true)),
+        .setDescription("Tournament name")
+        .setRequired(true)
+    ),
 
   async execute(interaction) {
     const name = interaction.options.getString("name");
-    const data = await loadData();
-
-    if (!data.tournaments[name]) {
-      return interaction.reply({ content: `Tournament **${name}** not found.`, ephemeral: true });
-    }
-
+    const data = await tournament.getData();
     const t = data.tournaments[name];
+
+    if (!t) return interaction.reply({ content: "Tournament not found.", ephemeral: true });
+
+    const totalSlots = t.slots;
+    const filledSlots = t.registrations.length;
+    const remainingSlots = totalSlots - filledSlots;
+
     const embed = new EmbedBuilder()
-      .setColor(0x00ff99)
-      .setTitle(`**Tournament Info: ${t.name}**`)
-      .addFields(
-        { name: "**Total Slots**", value: `${t.slots}`, inline: true },
-        { name: "**Mentions Required**", value: `${t.mentions}`, inline: true },
-        { name: "**Channel**", value: `<#${t.channelId}>`, inline: true }
+      .setColor(0xff9900)
+      .setTitle(`**Tournament Info – ${t.name}**`)
+      .setDescription(
+        `**Channel:** <#${t.channelId}>\n` +
+        `**Total Slots:** ${totalSlots}\n` +
+        `**Slots Filled:** ${filledSlots}\n` +
+        `**Slots Remaining:** ${remainingSlots}`
       );
 
-    if (t.registrations.length > 0) {
-      embed.addFields({
-        name: "**Registered Teams**",
-        value: t.registrations.map((reg, i) => 
-          `**${i + 1}. ${reg.teamName}** - Leader: <@${reg.leaderId}>\nMembers: ${reg.members.map(id => `<@${id}>`).join(", ")}`
-        ).join("\n\n")
-      });
-    } else {
-      embed.addFields({ name: "**Registered Teams**", value: "No teams yet." });
-    }
-
     await interaction.reply({ embeds: [embed] });
-  },
-
-  async update(guildId) {
-    // Optional function to update tinfo dynamically if needed
   }
 };

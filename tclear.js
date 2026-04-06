@@ -19,33 +19,37 @@ module.exports = {
     }
 
     const name = interaction.options.getString("name");
-    const data = await tournament.getData();
-    const t = data.tournaments[name];
+    let data = await tournament.getData();
 
-    if (!t) {
+    if (!data.tournaments || !data.tournaments[name]) {
       return interaction.reply({ content: `Tournament **${name}** not found.`, ephemeral: true });
     }
 
-    // ================= REMOVE TEAM ROLES =================
+    const t = data.tournaments[name];
+
+    // ================= 1. DELETE TEAM ROLES =================
     if (t.registrations && t.registrations.length > 0) {
       for (let reg of t.registrations) {
-        const roleName = reg.teamName.replace(/[<>@]/g, "");
+        const roleName = reg.teamName.replace(/[<>@]/g, "").trim();
         const role = interaction.guild.roles.cache.find(r => r.name === roleName);
         if (role) {
           try {
             await role.delete("Tournament cleared");
+            console.log(`Deleted role: ${roleName}`);
           } catch (e) {
-            console.log(`Failed to delete role ${roleName}:`, e);
+            console.log(`Failed to delete role ${roleName}:`, e.message);
           }
         }
       }
     }
 
-    // ================= DELETE TOURNAMENT DATA =================
+    // ================= 2. DELETE TOURNAMENT FROM DATA =================
     delete data.tournaments[name];
-    await tournament.saveData(data);
 
-    // ================= RESTORE CHANNEL PERMISSIONS =================
+    // Force save clean data
+    await tournament.saveData({ tournaments: data.tournaments || {} });
+
+    // ================= 3. UNLOCK CHANNEL =================
     const channel = await interaction.guild.channels.fetch(t.channelId).catch(() => null);
     if (channel) {
       try {
@@ -54,32 +58,23 @@ module.exports = {
           { SendMessages: true }
         );
       } catch (e) {
-        console.log("Failed to unlock channel:", e);
+        console.log("Failed to unlock channel:", e.message);
       }
 
-      // Send cleared message in the channel
       const clearedEmbed = new EmbedBuilder()
         .setColor(0xff0000)
         .setTitle("**Tournament Cleared**")
-        .setDescription(`Tournament **${name}** has been successfully cleared.\nRegistration is now open again if you create a new tournament.`)
+        .setDescription(`Tournament **${name}** has been successfully cleared.\nYou can now create a new tournament in this channel.`)
         .setFooter({ text: `Cleared by ${interaction.user.tag}` });
 
       await channel.send({ embeds: [clearedEmbed] });
     }
 
-    // ================= UPDATE OTHER COMMANDS IF NEEDED =================
-    try {
-      const tinfoCommand = require("./tinfo");
-      const slotCommand = require("./slot");
-      if (tinfoCommand.update) await tinfoCommand.update(interaction.guild.id);
-      if (slotCommand.update) await slotCommand.update(interaction.guild.id);
-    } catch (e) {
-      console.log("Failed to update tinfo/slot:", e);
-    }
-
     await interaction.reply({ 
-      content: `✅ Tournament **${name}** has been cleared successfully.`, 
+      content: `✅ Tournament **${name}** cleared successfully!`, 
       ephemeral: true 
     });
+
+    console.log(`Tournament "${name}" fully cleared.`);
   }
 };

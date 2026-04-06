@@ -87,7 +87,7 @@ module.exports = {
 
     await interaction.reply({ embeds: [embed] });
 
-    // 🔥 ONLY FIX: allowedMentions added (nothing else changed)
+    // 🔥 PING FIX: send registration started embed
     if (pings === "yes") {
       const startEmbed = new EmbedBuilder()
         .setColor(0x00ff99)
@@ -102,7 +102,7 @@ module.exports = {
       await channel.send({
         content: "@everyone @here",
         embeds: [startEmbed],
-        allowedMentions: { parse: ["everyone"] } // ✅ THIS IS THE ONLY REAL FIX
+        allowedMentions: { parse: ["everyone", "here"] }
       });
     }
   },

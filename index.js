@@ -4,6 +4,7 @@ const tournament = require("./tournament");
 const slot = require("./slot");
 const tinfo = require("./tinfo");
 const tclear = require("./tclear");
+const tchannel = require("./tchannel");
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
@@ -29,7 +30,8 @@ client.once("clientReady", async () => {
     tournament.data.toJSON(),
     slot.data.toJSON(),
     tinfo.data.toJSON(),
-    tclear.data.toJSON()
+    tclear.data.toJSON(),
+    tchannel.data.toJSON()
   ];
   const rest = new REST({ version: "10" }).setToken(TOKEN);
   try {
@@ -64,6 +66,7 @@ client.on("interactionCreate", async (interaction) => {
   if (interaction.commandName === "slot") await slot.execute(interaction);
   if (interaction.commandName === "tinfo") await tinfo.execute(interaction);
   if (interaction.commandName === "tclear") await tclear.execute(interaction);
+  if (interaction.commandName === "tchannel") await tchannel.execute(interaction);
 });
 
 // ================= MESSAGE LISTENER - FIXED (No unwanted replies) =================

@@ -10,7 +10,6 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    // 🔥 ADMIN CHECK
     const ADMIN_ROLE_ID = "1488964288210272458";
     const member = await interaction.guild.members.fetch(interaction.user.id);
 
@@ -19,17 +18,33 @@ module.exports = {
     }
 
     const name = interaction.options.getString("name");
-
     const data = await tournament.getData();
 
     if (!data.tournaments || !data.tournaments[name]) {
       return interaction.reply({ content: "Tournament not found", ephemeral: true });
     }
 
-    delete data.tournaments[name];
+    const t = data.tournaments[name];
 
+    // ================= DELETE ALL TEAM ROLES =================
+    for (let team of t.registrations) {
+      try {
+        const role = interaction.guild.roles.cache.find(r => r.name === team.teamName);
+        if (role) await role.delete("Tournament cleared");
+      } catch (e) {
+        console.log("Role delete error:", e);
+      }
+    }
+
+    // ================= STOP REGISTRATION =================
+    t.registrations = [];
+
+    // ================= DELETE TOURNAMENT =================
+    delete data.tournaments[name];
     await tournament.saveData(data);
 
-    await interaction.reply(`Tournament **${name}** cleared successfully`);
+    await interaction.reply({
+      content: `Tournament **${name}** cleared successfully. All roles deleted, registrations stopped.`
+    });
   }
 };

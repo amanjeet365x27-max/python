@@ -71,8 +71,8 @@ module.exports = {
 
     const embed = new EmbedBuilder()
       .setColor(0x00ff99)
-      .setTitle("**Tournament Created!**")
-      .setDescription(`**${name}** has started registration.`)
+      .setTitle("**Tournament REGISTRATION[OPEN]**")
+      .setDescription(`**${name}** REGISTRATION STARTED GRAB YOUR SLOTS FAST`)
       .addFields(
         { name: "Total Slots", value: `${slots}`, inline: true },
         { name: "Mentions Required", value: `${mentions}`, inline: true },

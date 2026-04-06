@@ -42,17 +42,20 @@ client.once("clientReady", async () => {
   }
 });
 
-// ================= JOIN/LEAVE =================
+// ================= JOIN/LEAVE TRACKING =================
 client.on("guildMemberAdd", () => {
-  si.joins.push(Date.now());
   const now = Date.now();
-  si.joins = si.joins.filter(t => now - t < 86400000 * 2);
+  si.joins.push(now);
+  // Keep only joins in the last 24h
+  si.joins = si.joins.filter(t => now - t < 86400000);
+  console.log("Joins in last 24h:", si.joins.length);
 });
 
 client.on("guildMemberRemove", () => {
-  si.leaves.push(Date.now());
   const now = Date.now();
-  si.leaves = si.leaves.filter(t => now - t < 86400000 * 2);
+  si.leaves.push(now);
+  si.leaves = si.leaves.filter(t => now - t < 86400000);
+  console.log("Leaves in last 24h:", si.leaves.length);
 });
 
 // ================= COMMAND HANDLER =================
@@ -85,39 +88,39 @@ client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
   const data = await tournament.getData();
-
   if (!data.tournaments) return;
 
   for (let tName in data.tournaments) {
     const t = data.tournaments[tName];
 
+    // Stop registration if tournament was cleared
+    if (!t.registrations) continue;
     if (message.channel.id !== t.channelId) continue;
-
     if (t.registrations.length >= t.slots) return;
 
     const result = tournament.validate(message, t);
-
-    if (typeof result === "string") {
-      return message.reply(result);
-    }
+    if (typeof result === "string") return message.reply(result);
 
     // ================= ALREADY REGISTERED =================
     for (let i = 0; i < t.registrations.length; i++) {
       const team = t.registrations[i];
+      const alreadyInTeam = result.members.filter(id => team.members.includes(id));
 
-      for (let id of result.members) {
-        if (team.members.includes(id)) {
-          return message.reply({
-            embeds: [{
-              color: 0xff0000,
-              title: "Already Registered",
-              description:
-                `Team: **${team.teamName}**\n` +
-                `Slot: **${i + 1}**\n` +
-                `Registered By: <@${team.leaderId}>`
-            }]
-          });
-        }
+      if (alreadyInTeam.length > 0) {
+        const memberMentions = team.members.map(id => `<@${id}>`).join(", ");
+        return message.reply({
+          embeds: [{
+            color: 0xff0000,
+            title: "Player Already Registered",
+            description:
+              `The following player(s) are already in another team:\n` +
+              `${alreadyInTeam.map(id => `<@${id}>`).join(", ")}\n\n` +
+              `**Team Name:** ${team.teamName}\n` +
+              `**Slot:** ${i + 1}\n` +
+              `**Leader:** <@${team.leaderId}>\n` +
+              `**All Members:** ${memberMentions}`
+          }]
+        });
       }
     }
 
@@ -128,9 +131,9 @@ client.on("messageCreate", async (message) => {
       leaderId: message.author.id
     });
 
-    // ================= ROLE CREATE FIX =================
+    // ================= ROLE CREATE =================
     const role = await message.guild.roles.create({
-      name: result.teamName.replace(/[<>@]/g, ""), // ✅ ONLY FIX
+      name: result.teamName.replace(/[<>@]/g, ""),
       mentionable: true
     });
 
@@ -148,6 +151,7 @@ client.on("messageCreate", async (message) => {
       }]
     });
 
+    // ================= CLOSE REGISTRATION IF FULL =================
     if (t.registrations.length >= t.slots) {
       await message.channel.send({
         embeds: [{

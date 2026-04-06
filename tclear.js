@@ -1,13 +1,38 @@
-const { SlashCommandBuilder } = require("discord.js");
-const tournament = require("./tournament"); // only required, no DB here
+const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const pool = require("./db");
+const tournament = require("./tournament");
+
+async function loadData() {
+  const res = await pool.query("SELECT * FROM tournaments");
+  const tournaments = {};
+  res.rows.forEach(row => {
+    tournaments[row.name] = row.data;
+  });
+  return { tournaments };
+}
+
+async function saveData(data) {
+  for (let name in data.tournaments) {
+    await pool.query(
+      `INSERT INTO tournaments (name, data)
+       VALUES ($1, $2)
+       ON CONFLICT (name)
+       DO UPDATE SET data = $2`,
+      [name, data.tournaments[name]]
+    );
+  }
+}
+
+async function deleteTournament(name) {
+  await pool.query("DELETE FROM tournaments WHERE name=$1", [name]);
+}
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("tclear")
     .setDescription("Clear a tournament")
-    .addStringOption(option =>
-      option.setName("name").setDescription("Tournament name").setRequired(true)
-    ),
+    .addStringOption(o =>
+      o.setName("name").setDescription("Tournament name").setRequired(true)),
 
   async execute(interaction) {
     const ADMIN_ROLE_ID = "1488964288210272458";
@@ -18,33 +43,46 @@ module.exports = {
     }
 
     const name = interaction.options.getString("name");
-    const data = await tournament.getData();
+    const data = await loadData();
 
-    if (!data.tournaments || !data.tournaments[name]) {
-      return interaction.reply({ content: "Tournament not found", ephemeral: true });
+    if (!data.tournaments[name]) {
+      return interaction.reply({ content: `Tournament **${name}** does not exist.`, ephemeral: true });
     }
 
     const t = data.tournaments[name];
 
-    // ================= DELETE ALL TEAM ROLES =================
-    for (let team of t.registrations || []) {
-      try {
-        const role = interaction.guild.roles.cache.find(r => r.name === team.teamName.replace(/[<>@]/g, ""));
-        if (role) await role.delete("Tournament cleared");
-      } catch (e) {
-        console.log("Role delete error:", e);
+    // ================= REMOVE TEAM ROLES =================
+    for (let reg of t.registrations) {
+      const roleName = reg.teamName.replace(/[<>@]/g, "");
+      const role = interaction.guild.roles.cache.find(r => r.name === roleName);
+      if (role) {
+        try { await role.delete("Tournament cleared"); } catch (e) { console.log(e); }
       }
     }
 
-    // ================= STOP REGISTRATION =================
-    if (t.registrations) t.registrations = null; // prevent further registration
-
     // ================= DELETE TOURNAMENT =================
     delete data.tournaments[name];
-    await tournament.saveData(data);
+    await saveData(data);
 
-    await interaction.reply({
-      content: `Tournament **${name}** cleared successfully.\nAll team roles deleted and registrations stopped.`
-    });
+    // ================= SEND EMBED =================
+    const embed = new EmbedBuilder()
+      .setColor(0xff0000)
+      .setTitle("**Tournament Cleared**")
+      .setDescription(`Tournament **${name}** has been successfully cleared.`)
+      .setFooter({ text: `Cleared by ${interaction.user.tag}` });
+
+    const channel = await interaction.guild.channels.fetch(t.channelId).catch(() => null);
+    if (channel) await channel.send({ embeds: [embed] });
+
+    // ================= UPDATE TINFO & SLOT =================
+    try {
+      const tinfoCommand = require("./tinfo");
+      const slotCommand = require("./slot");
+
+      if (tinfoCommand.update) await tinfoCommand.update(interaction.guild.id);
+      if (slotCommand.update) await slotCommand.update(interaction.guild.id);
+    } catch (e) { console.log("Update tinfo/slot failed:", e); }
+
+    await interaction.reply({ content: `Tournament **${name}** cleared successfully.`, ephemeral: true });
   }
 };

@@ -36,7 +36,6 @@ module.exports = {
       o.setName("mentions").setDescription("Mentions required").setRequired(true))
     .addChannelOption(o =>
       o.setName("channel").setDescription("Registration channel").setRequired(true))
-    // 🔥 NEW OPTION
     .addStringOption(o =>
       o.setName("pings")
         .setDescription("Ping everyone or not")
@@ -48,7 +47,6 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    // ✅ ADMIN ROLE CHECK
     const ADMIN_ROLE_ID = "1488964288210272458";
     const member = await interaction.guild.members.fetch(interaction.user.id);
 
@@ -89,7 +87,7 @@ module.exports = {
 
     await interaction.reply({ embeds: [embed] });
 
-    // 🔥 PING OPTION FIXED: send registration started embed
+    // 🔥 ONLY FIX: allowedMentions added (nothing else changed)
     if (pings === "yes") {
       const startEmbed = new EmbedBuilder()
         .setColor(0x00ff99)
@@ -100,7 +98,12 @@ module.exports = {
           `**Team Name- YOUR TEAM NAME**\n` +
           `@mention your team members (including yourself)`
         );
-      await channel.send({ content: "@everyone @here", embeds: [startEmbed] });
+
+      await channel.send({
+        content: "@everyone @here",
+        embeds: [startEmbed],
+        allowedMentions: { parse: ["everyone"] } // ✅ THIS IS THE ONLY REAL FIX
+      });
     }
   },
 

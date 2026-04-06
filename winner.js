@@ -38,6 +38,18 @@ module.exports = {
       });
     }
 
+    // ===== SAVE WINNER DATA =====
+    if (!t.winners) t.winners = [];
+
+    t.winners.push({
+      teamName: teamName,
+      igl: iglUser.id
+    });
+
+    data.tournaments[tournamentName] = t;
+    await tournament.saveData(data);
+    // ===== END SAVE =====
+
     // Create winner role
     let winnerRole = null;
     try {

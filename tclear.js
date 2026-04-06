@@ -1,83 +1,89 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { Client, GatewayIntentBits, REST, Routes } = require("discord.js");
+const si = require("./si");
 const tournament = require("./tournament");
-const pool = require("./db");   // <-- We use pool directly for clean delete
+const slot = require("./slot");
+const tinfo = require("./tinfo");
+const tclear = require("./tclear");
 
-module.exports = {
-  data: new SlashCommandBuilder()
-    .setName("tclear")
-    .setDescription("Clear a tournament")
-    .addStringOption(o =>
-      o.setName("name")
-        .setDescription("Tournament name")
-        .setRequired(true)
-    ),
+const TOKEN = process.env.DISCORD_BOT_TOKEN;
+const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 
-  async execute(interaction) {
-    const ADMIN_ROLE_ID = "1488964288210272458";
-    const member = await interaction.guild.members.fetch(interaction.user.id);
-    if (!member.roles.cache.has(ADMIN_ROLE_ID)) {
-      return interaction.reply({ content: "Only admin can use this.", ephemeral: true });
-    }
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildPresences,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
+  ],
+});
 
-    const name = interaction.options.getString("name").trim();
-
-    // Load current data
-    let data = await tournament.getData();
-
-    if (!data.tournaments || !data.tournaments[name]) {
-      return interaction.reply({ content: `Tournament **${name}** not found.`, ephemeral: true });
-    }
-
-    const t = data.tournaments[name];
-
-    // 1. Delete team roles
-    if (t.registrations && t.registrations.length > 0) {
-      for (let reg of t.registrations) {
-        const roleName = reg.teamName.replace(/[<>@]/g, "").trim();
-        const role = interaction.guild.roles.cache.find(r => r.name === roleName);
-        if (role) {
-          try {
-            await role.delete("Tournament cleared");
-          } catch (e) {
-            console.log(`Role delete failed for ${roleName}:`, e.message);
-          }
-        }
-      }
-    }
-
-    // 2. HARD DELETE from database (this is the key change)
-    try {
-      await pool.query("DELETE FROM tournaments WHERE name = $1", [name]);
-      console.log(`Hard deleted tournament: ${name} from DB`);
-    } catch (e) {
-      console.error("Database delete error:", e);
-      return interaction.reply({ content: "Database error while clearing.", ephemeral: true });
-    }
-
-    // 3. Unlock the channel
-    const channel = await interaction.guild.channels.fetch(t.channelId).catch(() => null);
-    if (channel) {
-      try {
-        await channel.permissionOverwrites.edit(
-          interaction.guild.roles.everyone,
-          { SendMessages: true }
-        );
-      } catch (e) {
-        console.log("Unlock channel failed:", e.message);
-      }
-
-      const clearedEmbed = new EmbedBuilder()
-        .setColor(0x00ff00)
-        .setTitle("✅ Tournament Cleared")
-        .setDescription(`Tournament **${name}** has been completely removed.\nYou can create a new tournament now.`)
-        .setFooter({ text: `Cleared by ${interaction.user.tag}` });
-
-      await channel.send({ embeds: [clearedEmbed] });
-    }
-
-    await interaction.reply({ 
-      content: `✅ Tournament **${name}** has been **fully cleared** from the system!`, 
-      ephemeral: true 
-    });
+client.once("clientReady", async () => {
+  console.log(`Logged in as ${client.user.tag}`);
+  const commands = [
+    si.data.toJSON(),
+    tournament.data.toJSON(),
+    slot.data.toJSON(),
+    tinfo.data.toJSON(),
+    tclear.data.toJSON()
+  ];
+  const rest = new REST({ version: "10" }).setToken(TOKEN);
+  try {
+    await rest.put(
+      Routes.applicationCommands(CLIENT_ID),
+      { body: commands }
+    );
+    console.log("Slash commands registered");
+  } catch (error) {
+    console.error(error);
   }
-};
+});
+
+// ================= JOIN/LEAVE TRACKING =================
+client.on("guildMemberAdd", () => {
+  const now = Date.now();
+  si.joins.push(now);
+  si.joins = si.joins.filter(t => now - t < 86400000);
+});
+
+client.on("guildMemberRemove", () => {
+  const now = Date.now();
+  si.leaves.push(now);
+  si.leaves = si.leaves.filter(t => now - t < 86400000);
+});
+
+// ================= COMMAND HANDLER =================
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+  if (interaction.commandName === "serverinfo") await si.execute(interaction);
+  if (interaction.commandName === "tournament") await tournament.execute(interaction);
+  if (interaction.commandName === "slot") await slot.execute(interaction);
+  if (interaction.commandName === "tinfo") await tinfo.execute(interaction);
+  if (interaction.commandName === "tclear") await tclear.execute(interaction);
+});
+
+// ================= MESSAGE LISTENER - FIXED (No unwanted replies) =================
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
+
+  const data = await tournament.getData();
+  if (!data.tournaments || Object.keys(data.tournaments).length === 0) return;
+
+  for (let tName in data.tournaments) {
+    const t = data.tournaments[tName];
+
+    if (message.channel.id !== t.channelId) continue;
+
+    // If full → stay completely silent
+    if (t.registrations && t.registrations.length >= t.slots) {
+      return;
+    }
+
+    // Only register if slots are open
+    await tournament.register(message, t);
+    return;
+  }
+});
+
+// ================= LOGIN =================
+client.login(TOKEN);

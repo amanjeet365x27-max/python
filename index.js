@@ -21,7 +21,7 @@ const client = new Client({
 client.once("clientReady", async () => {
   console.log(`Logged in as ${client.user.tag}`);
   client.user.setPresence({
-  activities: [{ name: "TOURNAMENT BOT DEVELOPED BY HEROIC HUSTLE", type: 0 }],
+  activities: [{ name: "HEROIC HUSTLE KI JAY", type: 0 }],
   status: "online"
 });
   const commands = [

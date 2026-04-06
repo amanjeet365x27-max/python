@@ -15,7 +15,7 @@ module.exports = {
       return interaction.reply({ content: "Only admin can use this.", ephemeral: true });
     }
 
-    const data = await tournament.getData();
+    const data = await tournament.getData(); // fetch live data from Postgres
 
     if (!data.tournaments || Object.keys(data.tournaments).length === 0) {
       return interaction.reply({ content: "No tournaments running", ephemeral: true });

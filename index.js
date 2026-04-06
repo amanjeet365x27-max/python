@@ -7,7 +7,8 @@ const tclear = require("./tclear");
 const tchannel = require("./tchannel");
 const winner = require("./winner");
 const wslot = require("./wslot");
-const wchannel = require("./wchannel"); // ✅ added
+const wchannel = require("./wchannel");
+const wclear = require("./wclear"); // ✅ added
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
@@ -39,7 +40,8 @@ client.once("clientReady", async () => {
     tchannel.data.toJSON(),
     winner.data.toJSON(),
     wslot.data.toJSON(),
-    wchannel.data.toJSON() // ✅ added
+    wchannel.data.toJSON(),
+    wclear.data.toJSON() // ✅ added
   ];
 
   const rest = new REST({ version: "10" }).setToken(TOKEN);
@@ -84,7 +86,8 @@ client.on("interactionCreate", async (interaction) => {
   if (interaction.commandName === "tchannel") await tchannel.execute(interaction);
   if (interaction.commandName === "winner") await winner.execute(interaction);
   if (interaction.commandName === "wslot") await wslot.execute(interaction);
-  if (interaction.commandName === "wchannel") await wchannel.execute(interaction); // ✅ added
+  if (interaction.commandName === "wchannel") await wchannel.execute(interaction);
+  if (interaction.commandName === "wclear") await wclear.execute(interaction); // ✅ added
 });
 
 // ================= MESSAGE LISTENER - FIXED (No unwanted replies) =================

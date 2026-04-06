@@ -95,25 +95,11 @@ module.exports = {
   validate(message, t) {
     const content = message.content.trim();
     const match = content.match(/team\s*name\s*[-:=\s]*\s*(.+)/i);
-    if (!match) {
-      const lines = content.split('\n');
-      const possibleTeamName = lines[0].trim();
-      if (possibleTeamName.length > 0) {
-        return {
-          teamName: possibleTeamName,
-          members: [...message.mentions.users.keys()]
-        };
-      }
-      return "Use format:\n**Team Name- YOUR TEAM NAME**\n@mentions";
-    }
-
-    const teamName = match[1].split("\n")[0].trim();
-    if (!teamName) return "Invalid team name.";
 
     const mentions = message.mentions.users;
 
-    // =================== FIXED MENTION CHECK ===================
-    if (mentions.size !== t.mentions) {
+    // ---------- FORCE EXACT MENTION COUNT ----------
+    if (!mentions || mentions.size !== t.mentions) {
       const embed = new EmbedBuilder()
         .setColor(0xff0000)
         .setTitle("❌ Wrong Number of Mentions!")
@@ -123,6 +109,7 @@ module.exports = {
       return { error: true, embed };
     }
 
+    // ---------- LEADER MUST BE INCLUDED ----------
     if (!mentions.has(message.author.id)) {
       const embed = new EmbedBuilder()
         .setColor(0xff0000)
@@ -131,6 +118,17 @@ module.exports = {
         .setFooter({ text: "Mention yourself as the team leader." });
 
       return { error: true, embed };
+    }
+
+    // ---------- TEAM NAME PARSING ----------
+    let teamName;
+    if (match) {
+      teamName = match[1].split("\n")[0].trim();
+      if (!teamName) return "Invalid team name.";
+    } else {
+      const lines = content.split("\n");
+      teamName = lines[0].trim();
+      if (!teamName) return "Use format:\n**Team Name- YOUR TEAM NAME**\n@mentions";
     }
 
     return {
@@ -148,7 +146,7 @@ module.exports = {
       return message.reply(result);
     }
 
-    // Check already registered
+    // ---------- CHECK ALREADY REGISTERED ----------
     for (let i = 0; i < t.registrations.length; i++) {
       const team = t.registrations[i];
       const alreadyInTeam = result.members.filter(id => team.members.includes(id));
@@ -168,19 +166,19 @@ module.exports = {
       }
     }
 
-    // Save team
+    // ---------- SAVE TEAM ----------
     t.registrations.push({
       teamName: result.teamName,
       members: result.members,
       leaderId: message.author.id
     });
 
-    // ================= ROLE CREATION - USE TEAM NAME SAFELY =================
+    // ================= ROLE CREATION =================
     const cleanTeamName = result.teamName
-      .replace(/[<>@#]/g, "")           
-      .replace(/[^a-zA-Z0-9\s-_]/g, "") 
+      .replace(/[<>@#]/g, "")
+      .replace(/[^a-zA-Z0-9\s-_]/g, "")
       .trim()
-      .slice(0, 90);                    
+      .slice(0, 90);
 
     const role = await message.guild.roles.create({
       name: cleanTeamName || `Team ${t.registrations.length}`,
@@ -188,18 +186,17 @@ module.exports = {
       reason: "Tournament Team Role"
     });
 
-    // Assign role to IGL only
     const iglMember = await message.guild.members.fetch(message.author.id).catch(() => null);
     if (iglMember) await iglMember.roles.add(role);
 
-    // Save data
+    // ---------- SAVE DATA ----------
     const fullData = await this.getData();
     fullData.tournaments[t.name] = t;
     await this.saveData(fullData);
 
     const slotsRemaining = t.slots - t.registrations.length;
 
-    // Success Embed with GIF
+    // ---------- SUCCESS EMBED ----------
     const confirmEmbed = new EmbedBuilder()
       .setColor(0x00ff00)
       .setTitle("✅ Registration Confirmed!")
@@ -213,7 +210,7 @@ module.exports = {
 
     await message.channel.send({ embeds: [confirmEmbed] });
 
-    // Closed Embed
+    // ---------- CLOSE REGISTRATION IF FULL ----------
     if (t.registrations.length >= t.slots) {
       const closeEmbed = new EmbedBuilder()
         .setColor(0xff0000)

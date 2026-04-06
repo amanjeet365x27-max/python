@@ -53,7 +53,7 @@ module.exports = {
     const data = await loadData();
     if (!data.tournaments) data.tournaments = {};
 
-    // Only allow 1 tournament per server
+    // Only allow 1 tournament per channel
     for (let tName in data.tournaments) {
       if (data.tournaments[tName].channelId === channel.id) {
         return interaction.reply({ content: "A tournament already exists in this channel.", ephemeral: true });
@@ -81,8 +81,9 @@ module.exports = {
       )
       .setImage("https://cdn.oneesports.id/cdn-data/sites/2/2024/12/462574290_1265728211300654_4514308865345103186_n.jpg");
 
-    // Send the embed first, then reply with @everyone/@here ping
+    // Send embed first
     const msg = await interaction.reply({ embeds: [embed], fetchReply: true });
+    // Then ping everyone and here in reply to embed
     await msg.reply({ content: "@everyone @here" });
   },
 

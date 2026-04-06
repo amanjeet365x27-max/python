@@ -29,7 +29,6 @@ module.exports = {
     const teamName = interaction.options.getString("team");
     const iglUser = interaction.options.getUser("igl");
 
-    // Optional: Verify tournament exists
     const data = await tournament.getData();
     const t = data.tournaments ? data.tournaments[tournamentName] : null;
     if (!t) {
@@ -39,7 +38,7 @@ module.exports = {
       });
     }
 
-    // ================= CREATE WINNER ROLE + ASSIGN TO IGL =================
+    // Create winner role + assign to IGL
     let winnerRole = null;
     try {
       const cleanRoleName = teamName
@@ -61,7 +60,7 @@ module.exports = {
       console.error("Failed to create winner role:", e.message);
     }
 
-    // ================= COOL STYLISH WINNER EMBED =================
+    // Clean Winner Embed
     const winnerEmbed = new EmbedBuilder()
       .setColor(0xffd700)
       .setTitle("🏆 CHAMPIONS CROWNED 🏆")
@@ -71,7 +70,6 @@ module.exports = {
         { name: "🎮 IGL", value: `<@${iglUser.id}>`, inline: true }
       )
       .setImage("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTOu45FiRwsi0bqX_Y-PrjXtdn5kKf81mUx5yAePGo")
-      .setThumbnail("https://i.pinimg.com/originals/e8/06/52/e80652af2c77e3a73858e16b2ffe5f9a.gif")
       .setFooter({ text: "Keep Grinding and stay connected with Heroic Hustle!" })
       .setTimestamp();
 

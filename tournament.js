@@ -35,7 +35,15 @@ module.exports = {
     .addIntegerOption(o =>
       o.setName("mentions").setDescription("Mentions required").setRequired(true))
     .addChannelOption(o =>
-      o.setName("channel").setDescription("Registration channel").setRequired(true)),
+      o.setName("channel").setDescription("Registration channel").setRequired(true))
+    .addStringOption(o =>
+      o.setName("ping")
+        .setDescription("Ping everyone or not")
+        .setRequired(true)
+        .addChoices(
+          { name: "Yes", value: "yes" },
+          { name: "No", value: "no" }
+        )),
 
   async execute(interaction) {
     const ADMIN_ROLE_ID = "1488964288210272458";
@@ -48,6 +56,7 @@ module.exports = {
     const slots = interaction.options.getInteger("slots");
     const mentions = interaction.options.getInteger("mentions");
     const channel = interaction.options.getChannel("channel");
+    const ping = interaction.options.getString("ping"); // ✅ added
 
     const data = await loadData();
     if (!data.tournaments) data.tournaments = {};
@@ -69,8 +78,10 @@ module.exports = {
 
     await saveData(data);
 
-    // ------------- SEND PING FIRST -------------
-    const pingMsg = await channel.send({ content: "@everyone @here" });
+    // ------------- SEND PING FIRST (ONLY IF YES) -------------
+    if (ping === "yes") {
+      await channel.send({ content: "@everyone @here" });
+    }
 
     // ------------- OPEN CHANNEL FOR EVERYONE -------------
     await channel.permissionOverwrites.edit(
@@ -212,7 +223,6 @@ module.exports = {
     await message.channel.send({ embeds: [confirmEmbed] });
 
     if (t.registrations.length >= t.slots) {
-      // Close channel sending but keep viewable
       await message.channel.permissionOverwrites.edit(
         message.guild.roles.everyone,
         { SendMessages: false, ViewChannel: true }

@@ -9,6 +9,7 @@ const winner = require("./winner");   // Added for winner command
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
+const GUILD_ID = "1429536669555757068";   // ← Your server ID
 
 const client = new Client({
   intents: [
@@ -38,7 +39,7 @@ client.once("clientReady", async () => {
   const rest = new REST({ version: "10" }).setToken(TOKEN);
   try {
     await rest.put(
-      Routes.applicationCommands(CLIENT_ID),
+      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),   // Changed to Guild commands for instant update
       { body: commands }
     );
     console.log("Slash commands registered");

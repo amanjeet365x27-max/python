@@ -37,7 +37,7 @@ module.exports = {
     t.registrations.forEach((team, i) => {
       desc += `**• Slot ${i + 1}**\n` +
               `**Team:** ${team.teamName}\n` +
-              `**IGL / Leader:** <@${team.leaderId}>\n` +
+              `**IGL:** <@${team.leaderId}>\n` +
               `**Members:** ${team.members.map(id => `<@${id}>`).join(", ")}\n\n`;
     });
 

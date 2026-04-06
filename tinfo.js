@@ -4,11 +4,11 @@ const tournament = require("./tournament");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("tinfo")
-    .setDescription("Show info of a tournament or all active tournaments")
+    .setDescription("Show info of one tournament or all active tournaments")
     .addStringOption(o =>
       o.setName("name")
-        .setDescription("Tournament name (optional - leave blank to see all)")
-        .setRequired(false)
+        .setDescription("Tournament name (leave empty to see all active tournaments)")
+        .setRequired(false)        // ← This is the important fix
     ),
 
   async execute(interaction) {
@@ -22,7 +22,7 @@ module.exports = {
       });
     }
 
-    // ================= SINGLE TOURNAMENT INFO =================
+    // ================= SINGLE TOURNAMENT =================
     if (name) {
       const t = data.tournaments[name];
       if (!t) {
@@ -47,13 +47,7 @@ module.exports = {
           `**Created:** ${createdTime}`
         )
         .addFields(
-          {
-            name: "Status",
-            value: remaining > 0 
-              ? "🟢 **Registration Open**" 
-              : "🔴 **Registration Closed**",
-            inline: true
-          }
+          { name: "Status", value: remaining > 0 ? "🟢 **Open**" : "🔴 **Closed**", inline: true }
         )
         .setFooter({ text: "Use /slot to see detailed team list" })
         .setTimestamp();
@@ -61,7 +55,7 @@ module.exports = {
       return interaction.reply({ embeds: [embed] });
     }
 
-    // ================= ALL ACTIVE TOURNAMENTS LIST =================
+    // ================= ALL ACTIVE TOURNAMENTS =================
     const embed = new EmbedBuilder()
       .setColor(0x00ff99)
       .setTitle("**Active Tournaments on Server**")
@@ -87,7 +81,7 @@ module.exports = {
     }
 
     embed.setDescription(desc);
-    embed.setFooter({ text: "Use /tinfo name:TOURNAMENT_NAME for detailed view • /slot for team list" });
+    embed.setFooter({ text: "Use /tinfo name:TOURNAMENT_NAME for more details" });
     embed.setTimestamp();
 
     await interaction.reply({ embeds: [embed] });

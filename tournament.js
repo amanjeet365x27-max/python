@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const pool = require("./db");
 
-// ================= LOAD DATA =================
+// ================= LOAD =================
 async function loadData() {
   const res = await pool.query("SELECT * FROM tournaments");
   const tournaments = {};
@@ -11,7 +11,7 @@ async function loadData() {
   return { tournaments };
 }
 
-// ================= SAVE DATA =================
+// ================= SAVE =================
 async function saveData(data) {
   for (let name in data.tournaments) {
     await pool.query(
@@ -52,14 +52,12 @@ module.exports = {
     const data = await loadData();
     if (!data.tournaments) data.tournaments = {};
 
-    // Prevent duplicate tournament in same channel
     for (let tName in data.tournaments) {
       if (data.tournaments[tName].channelId === channel.id) {
         return interaction.reply({ content: "A tournament already exists in this channel.", ephemeral: true });
       }
     }
 
-    // Create tournament with createdAt timestamp
     data.tournaments[name] = {
       name,
       slots,
@@ -73,8 +71,8 @@ module.exports = {
 
     const embed = new EmbedBuilder()
       .setColor(0x00ff99)
-      .setTitle("**Tournament Created!**")
-      .setDescription(`**${name}** has started registration.`)
+      .setTitle("**REGISTRATION[OPEN]**")
+      .setDescription(`**${name}** REGISTRATION STARTED`)
       .addFields(
         { name: "Total Slots", value: `${slots}`, inline: true },
         { name: "Mentions Required", value: `${mentions}`, inline: true },
@@ -94,66 +92,42 @@ module.exports = {
     await saveData(data);
   },
 
-  // ================= VALIDATE MESSAGE =================
   validate(message, t) {
     const content = message.content.trim();
     const match = content.match(/team\s*name\s*-\s*(.+)/i);
-    if (!match) {
-      return "Use format:\n**Team Name- YOUR TEAM NAME**\n@mentions";
-    }
+    if (!match) return "Use format:\n**Team Name- YOUR TEAM NAME**\n@mentions";
 
     const teamName = match[1].split("\n")[0].trim();
     if (!teamName) return "Invalid team name.";
 
     const mentions = message.mentions.users;
-    if (mentions.size !== t.mentions) {
-      return `You must mention exactly ${t.mentions} players (including yourself).`;
-    }
-    if (!mentions.has(message.author.id)) {
-      return "You must include yourself in mentions.";
-    }
+    if (mentions.size !== t.mentions) return `You must mention exactly ${t.mentions} players (including yourself).`;
+    if (!mentions.has(message.author.id)) return "You must include yourself in mentions.";
 
-    return {
-      teamName,
-      members: [...mentions.keys()]
-    };
+    return { teamName, members: [...mentions.keys()] };
   },
 
-  // ================= REGISTER TEAM =================
   async register(message, t) {
     const result = this.validate(message, t);
-    if (typeof result === "string") {
-      return message.reply(result);
-    }
+    if (typeof result === "string") return message.reply(result);
 
-    // Check if any player is already in another team
+    // Already registered check
     for (let i = 0; i < t.registrations.length; i++) {
       const team = t.registrations[i];
-      const alreadyInTeam = result.members.filter(id => team.members.includes(id));
-      if (alreadyInTeam.length > 0) {
-        return message.reply({
-          embeds: [{
-            color: 0xff0000,
-            title: "Player Already Registered",
-            description: `The following player(s) are already in another team:\n` +
-              `${alreadyInTeam.map(id => `<@${id}>`).join(", ")}\n\n` +
-              `**Team Name:** ${team.teamName}\n` +
-              `**Slot:** ${i + 1}\n` +
-              `**Leader:** <@${team.leaderId}>\n` +
-              `**All Members:** ${team.members.map(id => `<@${id}>`).join(", ")}`
-          }]
-        });
+      const already = result.members.filter(id => team.members.includes(id));
+      if (already.length > 0) {
+        return message.reply({ embeds: [{ color: 0xff0000, title: "Player Already Registered", description: `Players already in another team:\n${already.map(id => `<@${id}>`).join(", ")}` }] });
       }
     }
 
-    // Save the team
+    // Register team
     t.registrations.push({
       teamName: result.teamName,
       members: result.members,
       leaderId: message.author.id
     });
 
-    // Create role and assign members
+    // Create role
     const role = await message.guild.roles.create({
       name: result.teamName.replace(/[<>@]/g, ""),
       mentionable: true
@@ -164,14 +138,14 @@ module.exports = {
       if (member) await member.roles.add(role);
     }
 
-    // Save updated data
+    // Save
     const fullData = await this.getData();
     fullData.tournaments[t.name] = t;
     await this.saveData(fullData);
 
-    // ================= SUCCESS EMBED - Small GIF =================
     const slotsRemaining = t.slots - t.registrations.length;
 
+    // ================= SUCCESS EMBED - Compact like Promo (Small Image) =================
     const confirmEmbed = new EmbedBuilder()
       .setColor(0x00ff00)
       .setTitle("✅ Registration Confirmed!")
@@ -181,21 +155,21 @@ module.exports = {
         `**Members:** ${result.members.map(id => `<@${id}>`).join(", ")}\n\n` +
         `**Slots Remaining:** ${slotsRemaining} / ${t.slots}`
       )
-      .setImage("https://i.pinimg.com/originals/e8/06/52/e80652af2c77e3a73858e16b2ffe5f9a.gif"); // Small GIF
+      .setImage("https://i.pinimg.com/originals/e8/06/52/e80652af2c77e3a73858e16b2ffe5f9a.gif"); // Small GIF - Compact
 
     await message.channel.send({ embeds: [confirmEmbed] });
 
-    // ================= CLOSED EMBED - Big GIF =================
+    // ================= CLOSED EMBED - Big & Prominent like old Success =================
     if (t.registrations.length >= t.slots) {
       const closeEmbed = new EmbedBuilder()
         .setColor(0xff0000)
         .setTitle("🛑 Registration Closed")
         .setDescription("All slots are filled. Registration is now closed.")
-        .setImage("https://media.tenor.com/znjmPw_FF3sAAAAM/close.gif"); // Big GIF
+        .setImage("https://i.pinimg.com/originals/e8/06/52/e80652af2c77e3a73858e16b2ffe5f9a.gif"); // ← Big success style image (change link if you want different one)
 
       await message.channel.send({ embeds: [closeEmbed] });
 
-      // Lock the channel
+      // Lock channel
       await message.channel.permissionOverwrites.edit(
         message.guild.roles.everyone,
         { SendMessages: false }

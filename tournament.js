@@ -170,7 +170,7 @@ module.exports = {
       .setDescription(
         `**Team:** ${result.teamName}\n` +
         `**Leader:** <@${message.author.id}>\n` +
-        `**Members:** \( {result.members.map(id => `<@ \){id}>`).join(", ")}\n\n` +
+        `**Members:** ${result.members.map(id => `<@${id}>`).join(", ")}\n\n` +
         `**Slots Remaining:** ${slotsRemaining} / ${t.slots}`
       )
       .setThumbnail("https://i.pinimg.com/originals/e8/06/52/e80652af2c77e3a73858e16b2ffe5f9a.gif");

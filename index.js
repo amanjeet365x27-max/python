@@ -20,7 +20,6 @@ const client = new Client({
 
 client.once("clientReady", async () => {
   console.log(`Logged in as ${client.user.tag}`);
-
   const commands = [
     si.data.toJSON(),
     tournament.data.toJSON(),
@@ -28,9 +27,7 @@ client.once("clientReady", async () => {
     tinfo.data.toJSON(),
     tclear.data.toJSON()
   ];
-
   const rest = new REST({ version: "10" }).setToken(TOKEN);
-
   try {
     await rest.put(
       Routes.applicationCommands(CLIENT_ID),
@@ -60,7 +57,6 @@ client.on("guildMemberRemove", () => {
 // ================= COMMAND HANDLER =================
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
-
   if (interaction.commandName === "serverinfo") await si.execute(interaction);
   if (interaction.commandName === "tournament") await tournament.execute(interaction);
   if (interaction.commandName === "slot") await slot.execute(interaction);
@@ -68,7 +64,7 @@ client.on("interactionCreate", async (interaction) => {
   if (interaction.commandName === "tclear") await tclear.execute(interaction);
 });
 
-// ================= MESSAGE LISTENER =================
+// ================= MESSAGE LISTENER (FIXED) =================
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
@@ -77,13 +73,17 @@ client.on("messageCreate", async (message) => {
 
   for (let tName in data.tournaments) {
     const t = data.tournaments[tName];
-    if (!t.registrations) continue;
-    if (message.channel.id !== t.channelId) continue;
-    if (t.registrations.length >= t.slots) return;
 
-    // ================= REGISTER USING TOURNAMENT.JS =================
+    if (message.channel.id !== t.channelId) continue;
+
+    // Fixed: Check if tournament is full AFTER finding the correct channel
+    if (t.registrations && t.registrations.length >= t.slots) {
+      return message.reply("❌ Registration is already closed for this tournament.");
+    }
+
+    // Process registration
     await tournament.register(message, t);
-    return;
+    return; // Stop checking other tournaments
   }
 });
 

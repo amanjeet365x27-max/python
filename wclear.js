@@ -1,0 +1,103 @@
+
+const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const tournament = require("./tournament");
+
+module.exports = {
+  data: new SlashCommandBuilder()
+    .setName("wclear")
+    .setDescription("Clear winners of a tournament")
+    .addStringOption(o =>
+      o.setName("name")
+        .setDescription("Tournament name")
+        .setRequired(true)
+    ),
+
+  async execute(interaction) {
+    const ADMIN_ROLE_ID = "1488964288210272458";
+    const member = await interaction.guild.members.fetch(interaction.user.id);
+
+    if (!member.roles.cache.has(ADMIN_ROLE_ID)) {
+      return interaction.reply({ content: "Only admin can use this.", ephemeral: true });
+    }
+
+    const name = interaction.options.getString("name").trim();
+
+    let data = await tournament.getData();
+    if (!data.tournaments || !data.tournaments[name]) {
+      return interaction.reply({ content: `Tournament **${name}** not found.`, ephemeral: true });
+    }
+
+    const t = data.tournaments[name];
+
+    if (!t.winners || t.winners.length === 0) {
+      return interaction.reply({ content: "No winners to clear.", ephemeral: true });
+    }
+
+    // ===== DELETE WINNER ROLES FIRST =====
+    for (let w of t.winners) {
+      const roleName = w.teamName.replace(/[<>@#]/g, "").trim();
+      const role = interaction.guild.roles.cache.find(r => r.name === roleName);
+      if (role) {
+        try {
+          await role.delete("Winner cleared");
+        } catch (e) {
+          console.log(`Role delete failed for ${roleName}:`, e.message);
+        }
+      }
+    }
+
+    // ===== CLEAR DATA =====
+    t.winners = [];
+    data.tournaments[name] = t;
+    await tournament.saveData(data);
+
+    // ===== DELETE CHANNELS + CATEGORY =====
+    let deletedCategories = 0;
+    let deletedChannels = 0;
+
+    const targetName = `Winners - ${name}`.toLowerCase();
+
+    const categoriesToDelete = interaction.guild.channels.cache.filter(c => 
+      c.type === 4 && c.name.toLowerCase().startsWith(targetName)
+    );
+
+    for (const category of categoriesToDelete.values()) {
+      try {
+        const children = category.children.cache;
+
+        for (const child of children.values()) {
+          try {
+            await child.delete(`Winners ${name} cleared`);
+            deletedChannels++;
+          } catch (e) {
+            console.log(`Failed to delete child ${child.name}:`, e.message);
+          }
+        }
+
+        await category.delete(`Winners ${name} cleared`);
+        deletedCategories++;
+      } catch (e) {
+        console.log(`Failed to delete category ${category.name}:`, e.message);
+      }
+    }
+
+    // ===== FINAL RESPONSE =====
+    let summary = `✅ Winners for **${name}** have been fully cleared!`;
+
+    if (deletedCategories > 0 || deletedChannels > 0) {
+      summary += `\n🗑️ Deleted **${deletedCategories}** category(s) and **${deletedChannels}** channel(s).`;
+    }
+
+    const embed = new EmbedBuilder()
+      .setColor(0x00ff00)
+      .setTitle("✅ Winners Cleared")
+      .setDescription(`All winner data removed for **${name}**.`)
+      .setFooter({ text: `Cleared by ${interaction.user.tag}` });
+
+    await interaction.reply({
+      content: summary,
+      embeds: [embed],
+      ephemeral: true
+    });
+  }
+};

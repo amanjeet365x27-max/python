@@ -61,7 +61,7 @@ module.exports = {
       console.error("Failed to create winner role:", e.message);
     }
 
-    // Fixed Clean Winner Embed
+    // ✅ FIXED CLEAN WINNER EMBED
     const winnerEmbed = new EmbedBuilder()
       .setColor(0xffd700)
       .setTitle("🏆 CHAMPIONS CROWNED 🏆")

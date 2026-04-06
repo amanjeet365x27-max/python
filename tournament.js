@@ -121,13 +121,18 @@ module.exports = {
       const team = t.registrations[i];
       const alreadyInTeam = result.members.filter(id => team.members.includes(id));
       if (alreadyInTeam.length > 0) {
-        return message.reply({
-          embeds: [{
-            color: 0xff0000,
-            title: "Player Already Registered",
-            description: `The following player(s) are already in another team:\n${alreadyInTeam.map(id => `<@${id}>`).join(", ")}`
-          }]
-        });
+        const conflictEmbed = new EmbedBuilder()
+          .setColor(0xff0000)
+          .setTitle("❌ Player Already Registered")
+          .setDescription("One or more players are already part of another team.")
+          .addFields(
+            { name: "Team Name", value: `\`${team.teamName}\``, inline: true },
+            { name: "Slot Number", value: `${i + 1}`, inline: true },
+            { name: "IGL (Registered By)", value: `<@${team.leaderId}>`, inline: true },
+            { name: "Affected Player(s)", value: alreadyInTeam.map(id => `<@${id}>`).join("\n") }
+          );
+
+        return message.reply({ embeds: [conflictEmbed] });
       }
     }
 

@@ -31,7 +31,7 @@ module.exports = {
 
     // Optional: Verify tournament exists
     const data = await tournament.getData();
-    const t = data.tournaments[tournamentName];
+    const t = data.tournaments ? data.tournaments[tournamentName] : null;
     if (!t) {
       return interaction.reply({ 
         content: `Tournament **${tournamentName}** not found.`, 
@@ -40,29 +40,25 @@ module.exports = {
     }
 
     // ================= CREATE WINNER ROLE + ASSIGN TO IGL =================
-    let winnerRole;
+    let winnerRole = null;
     try {
-      // Clean team name for role (safe for Discord)
       const cleanRoleName = teamName
         .replace(/[<>@#]/g, "")
         .replace(/[^a-zA-Z0-9\s-_]/g, "")
         .trim()
-        .slice(0, 90);
+        .slice(0, 90) || `Winner ${teamName}`;
 
       winnerRole = await interaction.guild.roles.create({
-        name: cleanRoleName || teamName,
+        name: cleanRoleName,
         mentionable: true,
-        color: 0xffd700,           // Gold color for winner role
+        color: 0xffd700,
         reason: `Winner role for ${tournamentName}`
       });
 
-      // Give the role to IGL
       const iglMember = await interaction.guild.members.fetch(iglUser.id);
       await iglMember.roles.add(winnerRole);
-
     } catch (e) {
       console.error("Failed to create winner role:", e.message);
-      // Continue even if role creation fails
     }
 
     // ================= COOL STYLISH WINNER EMBED =================
@@ -71,26 +67,18 @@ module.exports = {
       .setTitle("🏆 CHAMPIONS CROWNED 🏆")
       .setDescription(`**\( {teamName}** has emerged victorious in ** \){tournamentName}**!`)
       .addFields(
-        { 
-          name: "👑 Winning Team", 
-          value: `**${teamName}**`, 
-          inline: true 
-        },
-        { 
-          name: "🎮 IGL", 
-          value: `<@${iglUser.id}>`, 
-          inline: true 
-        }
+        { name: "👑 Winning Team", value: `**${teamName}**`, inline: true },
+        { name: "🎮 IGL", value: `<@${iglUser.id}>`, inline: true }
       )
       .setImage("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTOu45FiRwsi0bqX_Y-PrjXtdn5kKf81mUx5yAePGo")
       .setThumbnail("https://i.pinimg.com/originals/e8/06/52/e80652af2c77e3a73858e16b2ffe5f9a.gif")
-      .setFooter({ 
-        text: "Keep Grinding and stay connected with Heroic Hustle!" 
-      })
+      .setFooter({ text: "Keep Grinding and stay connected with Heroic Hustle!" })
       .setTimestamp();
 
+    const pingRole = winnerRole ? ` <@&${winnerRole.id}>` : "";
+
     await interaction.reply({ 
-      content: `🎉 **Congratulations \( {teamName}!** <@ \){iglUser.id}> \( {winnerRole ? `<@& \){winnerRole.id}>` : ''}`,
+      content: `🎉 **Congratulations \( {teamName}!** <@ \){iglUser.id}>${pingRole}`,
       embeds: [winnerEmbed] 
     });
   }

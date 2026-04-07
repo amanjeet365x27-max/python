@@ -110,7 +110,7 @@ module.exports = {
 
     await channel.send({ embeds: [embed] });
 
-    // ===== BACKUP MESSAGE LISTENER (FIXED) =====
+    // ===== BACKUP MESSAGE LISTENER =====
     const backupCollector = channel.createMessageCollector({
       filter: m => !m.author.bot,
       time: 0
@@ -130,7 +130,7 @@ module.exports = {
 
   // ================= BACKUP VALIDATION =================
   validate(message, t) {
-    const content = message.content;
+    const content = message.content.trim();
 
     // TAKE ALL MENTIONS
     let mentions = [...message.mentions.users.keys()];
@@ -142,13 +142,17 @@ module.exports = {
 
     mentions = mentions.slice(0, t.backup.mentions);
 
-    // TEAM NAME FLEXIBLE (IGNORE RANDOM TEXT)
-    let teamName = content
-      .split("\n")
-      .map(l => l.trim())
-      .filter(l => l.length > 0 && !l.includes("<@"))[0];
+    // TEAM NAME FLEXIBLE (same logic as tournament.js)
+    let teamName;
 
-    if (!teamName) teamName = "No Name Team";
+    const match = content.match(/team\s*name\s*[-:=\s]*\s*(.+)/i);
+    if (match) {
+      teamName = match[1].split("\n")[0].trim();
+    } else {
+      // fallback: first non-empty clean line (ignore junk lines)
+      const lines = content.split("\n").map(l => l.trim()).filter(l => l.length > 0 && !l.includes("<@"));
+      teamName = lines.length ? lines[0] : "No Name Team";
+    }
 
     return {
       teamName,
@@ -158,19 +162,19 @@ module.exports = {
 
   // ================= BACKUP REGISTER =================
   async backupRegister(message, t) {
+    if (t.backup.filled >= t.backup.slots) {
+      return message.reply("All backup slots are already filled.");
+    }
+
     const result = this.validate(message, t);
 
     if (typeof result === "string") {
       return message.reply(result);
     }
 
-    if (t.backup.filled >= t.backup.slots) {
-      return message.reply("All backup slots are already filled.");
-    }
-
-    // ===== CHECK IF ALREADY REGISTERED =====
+    // ===== CHECK IF ALREADY REGISTERED (same fake-tag logic as tournament.js) =====
     const already = t.registrations.some(
-      r => r && (r.leaderId === message.author.id || r.members.includes(message.author.id))
+      r => r && (r.leaderId === message.author.id || r.members.some(id => result.members.includes(id)))
     );
 
     if (already) {
@@ -181,7 +185,7 @@ module.exports = {
 
     // ===== FILL FIRST EMPTY SLOT =====
     let slotIndex = t.registrations.findIndex(r => r === null || r === undefined);
-    if (slotIndex === -1) slotIndex = t.registrations.length; // fallback to end
+    if (slotIndex === -1) slotIndex = t.registrations.length;
     t.registrations[slotIndex] = {
       teamName: result.teamName,
       members: result.members,
@@ -218,5 +222,15 @@ module.exports = {
       );
 
     await message.channel.send({ embeds: [embed] });
+
+    // Close backup if full
+    if (t.backup.filled >= t.backup.slots) {
+      t.backup.enabled = false;
+      await tournament.saveData(fullData);
+      await message.channel.permissionOverwrites.edit(
+        message.guild.roles.everyone,
+        { SendMessages: false, ViewChannel: true }
+      );
+    }
   }
 };

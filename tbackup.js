@@ -55,7 +55,7 @@ module.exports = {
 
     const t = data.tournaments[name];
 
-    const filled = t.registrations.length;
+    const filled = t.registrations.filter(r => r != null).length;
     const emptySlots = t.slots - filled;
 
     if (emptySlots <= 0) {
@@ -156,12 +156,14 @@ module.exports = {
 
     t.backup.filled++;
 
-    // ADD INTO MAIN REGISTRATION (fills empty slot via shift logic)
-    t.registrations.push({
+    // ===== FILL FIRST EMPTY SLOT =====
+    let slotIndex = t.registrations.findIndex(r => r === null || r === undefined);
+    if (slotIndex === -1) slotIndex = t.registrations.length; // fallback to end
+    t.registrations[slotIndex] = {
       teamName: result.teamName,
       members: result.members,
       leaderId: message.author.id
-    });
+    };
 
     const cleanTeamName = result.teamName
       .replace(/[<>@#]/g, "")
@@ -170,7 +172,7 @@ module.exports = {
       .slice(0, 90);
 
     const role = await message.guild.roles.create({
-      name: cleanTeamName || `Team ${t.registrations.length}`,
+      name: cleanTeamName || `Team ${slotIndex + 1}`,
       mentionable: true
     });
 

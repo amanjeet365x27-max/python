@@ -13,6 +13,10 @@ module.exports = {
       o.setName("slots")
         .setDescription("Backup slots")
         .setRequired(true))
+    .addIntegerOption(o =>
+      o.setName("mentions")
+        .setDescription("Mentions required")
+        .setRequired(true))
     .addChannelOption(o =>
       o.setName("channel")
         .setDescription("Backup registration channel")
@@ -36,6 +40,7 @@ module.exports = {
 
     const name = interaction.options.getString("name");
     const backupSlots = interaction.options.getInteger("slots");
+    const mentionsRequired = interaction.options.getInteger("mentions");
     const channel = interaction.options.getChannel("channel");
     const ping = interaction.options.getString("ping");
 
@@ -50,7 +55,6 @@ module.exports = {
 
     const t = data.tournaments[name];
 
-    // ===== COUNT EMPTY SLOTS =====
     const filled = t.registrations.length;
     const emptySlots = t.slots - filled;
 
@@ -68,11 +72,12 @@ module.exports = {
       });
     }
 
-    // ===== SET BACKUP MODE =====
+    // ===== BACKUP CONFIG =====
     t.backup = {
       enabled: true,
       slots: backupSlots,
       filled: 0,
+      mentions: mentionsRequired,
       channelId: channel.id
     };
 
@@ -84,7 +89,7 @@ module.exports = {
       await channel.send({ content: "@everyone @here" });
     }
 
-    // ===== PERMISSIONS =====
+    // ===== PERMS =====
     await channel.permissionOverwrites.edit(
       interaction.guild.roles.everyone,
       { ViewChannel: true, SendMessages: true }
@@ -98,6 +103,7 @@ module.exports = {
       .addFields(
         { name: "Backup Slots", value: `${backupSlots}`, inline: true },
         { name: "Remaining", value: `${backupSlots} / ${backupSlots}`, inline: true },
+        { name: "Mentions Required", value: `${mentionsRequired}`, inline: true },
         { name: "Channel", value: `<#${channel.id}>` }
       )
       .setImage("https://cdn.oneesports.id/cdn-data/sites/2/2024/12/462574290_1265728211300654_4514308865345103186_n.jpg");
@@ -108,5 +114,84 @@ module.exports = {
       content: "✅ Backup registration started!",
       ephemeral: true
     });
+  },
+
+  // ================= BACKUP VALIDATION =================
+  validate(message, t) {
+    const content = message.content;
+
+    // TAKE ALL MENTIONS
+    let mentions = [...message.mentions.users.keys()];
+
+    // CUT EXTRA MENTIONS
+    if (mentions.length < t.backup.mentions) {
+      return "Not enough mentions.";
+    }
+
+    mentions = mentions.slice(0, t.backup.mentions);
+
+    // TEAM NAME FLEXIBLE (IGNORE RANDOM TEXT)
+    let teamName = content
+      .split("\n")
+      .map(l => l.trim())
+      .filter(l => l.length > 0 && !l.includes("<@"))[0];
+
+    if (!teamName) teamName = "No Name Team";
+
+    return {
+      teamName,
+      members: mentions
+    };
+  },
+
+  // ================= BACKUP REGISTER =================
+  async backupRegister(message, t) {
+    const result = this.validate(message, t);
+
+    if (typeof result === "string") {
+      return message.reply(result);
+    }
+
+    if (t.backup.filled >= t.backup.slots) return;
+
+    t.backup.filled++;
+
+    // ADD INTO MAIN REGISTRATION (fills empty slot via shift logic)
+    t.registrations.push({
+      teamName: result.teamName,
+      members: result.members,
+      leaderId: message.author.id
+    });
+
+    const cleanTeamName = result.teamName
+      .replace(/[<>@#]/g, "")
+      .replace(/[^a-zA-Z0-9\s-_]/g, "")
+      .trim()
+      .slice(0, 90);
+
+    const role = await message.guild.roles.create({
+      name: cleanTeamName || `Team ${t.registrations.length}`,
+      mentionable: true
+    });
+
+    const iglMember = await message.guild.members.fetch(message.author.id).catch(() => null);
+    if (iglMember) await iglMember.roles.add(role);
+
+    const fullData = await tournament.getData();
+    fullData.tournaments[t.name] = t;
+    await tournament.saveData(fullData);
+
+    const remaining = t.backup.slots - t.backup.filled;
+
+    const embed = new EmbedBuilder()
+      .setColor(0x00ff00)
+      .setTitle("✅ Backup Slot Taken")
+      .setDescription(
+        `**Team:** ${result.teamName}\n` +
+        `**Leader:** <@${message.author.id}>\n` +
+        `**Remaining Backup Slots:** ${remaining} / ${t.backup.slots}`
+      );
+
+    await message.channel.send({ embeds: [embed] });
   }
 };

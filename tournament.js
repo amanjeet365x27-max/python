@@ -155,6 +155,8 @@ module.exports = {
       teamName = lines.length ? lines[0] : `Team-${Date.now()}`;
     }
 
+    teamName = teamName.replace(/<@!?[\d]+>/g, '').trim() || `Team-${Date.now()}`;
+
     return {
       teamName,
       members: mentionIds

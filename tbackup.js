@@ -67,7 +67,7 @@ module.exports = {
 
     if (backupSlots > emptySlots) {
       return interaction.reply({
-        content: `Only **${emptySlots}** empty slot(s) available but you requested **${backupSlots}**.`,
+        content: `Only **\( {emptySlots}** empty slot(s) available but you requested ** \){backupSlots}**.`,
         ephemeral: true
       });
     }
@@ -109,6 +109,18 @@ module.exports = {
       .setImage("https://cdn.oneesports.id/cdn-data/sites/2/2024/12/462574290_1265728211300654_4514308865345103186_n.jpg");
 
     await channel.send({ embeds: [embed] });
+
+    // ===== BACKUP MESSAGE LISTENER (FIXED) =====
+    const backupCollector = channel.createMessageCollector({
+      filter: m => !m.author.bot,
+      time: 0
+    });
+
+    backupCollector.on('collect', async (message) => {
+      if (t.backup && t.backup.enabled && message.channel.id === t.backup.channelId) {
+        await this.backupRegister(message, t);
+      }
+    });
 
     await interaction.reply({
       content: "✅ Backup registration started!",

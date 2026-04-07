@@ -65,17 +65,24 @@ client.once("clientReady", async () => {
 
   for (const cmd of allCommands) {
     try {
-      commands.push(cmd.data.toJSON());
-      console.log(`Loaded command: ${cmd.data.name}`);
+      if (!cmd.data) {
+        console.log("Skipped bad command");
+        continue;
+      }
+
+      const json = cmd.data.toJSON();
+      commands.push(json);
+      console.log(`Loaded command: ${json.name}`);
     } catch (e) {
-      console.error("Broken command:", e);
+      console.error("Broken command schema:", e);
     }
   }
+
+  console.log("Registering slash commands...");
 
   const rest = new REST({ version: "10" }).setToken(TOKEN);
 
   try {
-    console.log("Registering slash commands...");
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: commands }
@@ -131,13 +138,9 @@ client.on("messageCreate", async (message) => {
 
     if (message.channel.id !== t.channelId) continue;
 
-    if (t.registrations && t.registrations.length >= t.slots) {
-      return;
-    }
+    if (t.registrations && t.registrations.length >= t.slots) return;
 
-    if (t.backupMode !== true && t.registrations.length < t.slots && t.registrations.length !== 0) {
-      return;
-    }
+    if (t.backupMode !== true && t.registrations.length < t.slots && t.registrations.length !== 0) return;
 
     await tournament.register(message, t);
     return;

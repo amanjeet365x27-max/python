@@ -27,7 +27,7 @@ const client = new Client({
   ],
 });
 
-client.once("ready", async () => {
+client.once("clientReady", async () => {
   console.log(`Logged in as ${client.user.tag}`);
 
   client.user.setPresence({
@@ -60,16 +60,19 @@ client.once("ready", async () => {
       { body: [] }
     );
 
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-    console.log("Registering fresh commands...");
+    console.log("Registering fresh commands one by one...");
 
-    await rest.put(
-      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-      { body: commands }
-    );
+    for (const cmd of commands) {
+      await rest.post(
+        Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+        { body: cmd }
+      );
+      console.log(`✅ Registered: ${cmd.name}`);
+    }
 
-    console.log("✅ Slash commands fully refreshed");
+    console.log("✅ All slash commands working");
   } catch (error) {
     console.error("❌ Registration failed:", error.rawError || error);
   }

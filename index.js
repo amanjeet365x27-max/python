@@ -60,21 +60,24 @@ client.once("clientReady", async () => {
       { body: [] }
     );
 
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
-    console.log("Registering fresh commands one by one...");
+    console.log("Registering commands safely...");
 
-    for (const cmd of commands) {
-      await rest.post(
-        Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-        { body: cmd }
-      );
-      console.log(`✅ Registered: ${cmd.name}`);
-    }
+    const register = rest.put(
+      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+      { body: commands }
+    );
 
-    console.log("✅ All slash commands working");
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Discord API timeout")), 15000)
+    );
+
+    await Promise.race([register, timeout]);
+
+    console.log("✅ Slash commands fully refreshed");
   } catch (error) {
-    console.error("❌ Registration failed:", error.rawError || error);
+    console.error("❌ Registration failed:", error.message || error);
   }
 });
 

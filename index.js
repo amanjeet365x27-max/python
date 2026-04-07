@@ -51,7 +51,7 @@ client.once("ready", async () => { // ✅ fixed event name
   const rest = new REST({ version: "10" }).setToken(TOKEN);
 
   try {
-    // ✅ removed clearing commands, only register commands now
+    // ✅ register all guild commands at once
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: commands }

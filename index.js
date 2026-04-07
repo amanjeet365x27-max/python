@@ -26,27 +26,34 @@ const client = new Client({
   ],
 });
 
-client.once("ready", async () => {
+client.once("clientReady", async () => {
   console.log(`Logged in as ${client.user.tag}`);
+
   client.user.setPresence({
     activities: [{ name: "HEROIC HUSTLE KI JAY", type: 0 }],
     status: "online"
   });
 
-  const commands = [
-    si.data.toJSON(),
-    tournament.data.toJSON(),
-    slot.data.toJSON(),
-    tinfo.data.toJSON(),
-    tclear.data.toJSON(),
-    tchannel.data.toJSON(),
-    winner.data.toJSON(),
-    wslot.data.toJSON(),
-    wchannel.data.toJSON(),
-    wclear.data.toJSON(),
-    tcancel.data.toJSON(),
-    tbackup.data.toJSON()
+  const commands = [];
+
+  const allCommands = [
+    si,
+    tournament,
+    slot,
+    tinfo,
+    tclear,
+    tchannel,
+    winner,
+    wslot,
+    wchannel,
+    wclear,
+    tcancel,
+    tbackup
   ];
+
+  for (const cmd of allCommands) {
+    commands.push(cmd.data.toJSON());
+  }
 
   const rest = new REST({ version: "10" }).setToken(TOKEN);
 
@@ -57,7 +64,7 @@ client.once("ready", async () => {
     );
     console.log("✅ Slash commands fully refreshed");
   } catch (error) {
-    console.error("Command registration failed:", error);
+    console.error("Command registration failed:", error.rawError || error);
   }
 });
 

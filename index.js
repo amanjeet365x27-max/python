@@ -1,16 +1,26 @@
 const { Client, GatewayIntentBits, REST, Routes } = require("discord.js");
-const si = require("./si");
-const tournament = require("./tournament");
-const slot = require("./slot");
-const tinfo = require("./tinfo");
-const tclear = require("./tclear");
-const tchannel = require("./tchannel");
-const winner = require("./winner");
-const wslot = require("./wslot");
-const wchannel = require("./wchannel");
-const wclear = require("./wclear");
-const tcancel = require("./tcancel");
-const tbackup = require("./tbackup");
+
+function loadCommand(file) {
+  try {
+    return require(file);
+  } catch (e) {
+    console.error(`Failed loading ${file}:`, e);
+    return null;
+  }
+}
+
+const si = loadCommand("./si");
+const tournament = loadCommand("./tournament");
+const slot = loadCommand("./slot");
+const tinfo = loadCommand("./tinfo");
+const tclear = loadCommand("./tclear");
+const tchannel = loadCommand("./tchannel");
+const winner = loadCommand("./winner");
+const wslot = loadCommand("./wslot");
+const wchannel = loadCommand("./wchannel");
+const wclear = loadCommand("./wclear");
+const tcancel = loadCommand("./tcancel");
+const tbackup = loadCommand("./tbackup");
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
@@ -49,10 +59,15 @@ client.once("clientReady", async () => {
     wclear,
     tcancel,
     tbackup
-  ];
+  ].filter(Boolean);
 
   for (const cmd of allCommands) {
-    commands.push(cmd.data.toJSON());
+    try {
+      commands.push(cmd.data.toJSON());
+      console.log(`Loaded command: ${cmd.data.name}`);
+    } catch (e) {
+      console.error("Broken command:", e);
+    }
   }
 
   const rest = new REST({ version: "10" }).setToken(TOKEN);
@@ -70,35 +85,40 @@ client.once("clientReady", async () => {
 
 client.on("guildMemberAdd", () => {
   const now = Date.now();
-  si.joins.push(now);
-  si.joins = si.joins.filter(t => now - t < 86400000);
+  if (si) {
+    si.joins.push(now);
+    si.joins = si.joins.filter(t => now - t < 86400000);
+  }
 });
 
 client.on("guildMemberRemove", () => {
   const now = Date.now();
-  si.leaves.push(now);
-  si.leaves = si.leaves.filter(t => now - t < 86400000);
+  if (si) {
+    si.leaves.push(now);
+    si.leaves = si.leaves.filter(t => now - t < 86400000);
+  }
 });
 
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
-  if (interaction.commandName === "serverinfo") await si.execute(interaction);
-  if (interaction.commandName === "tournament") await tournament.execute(interaction);
-  if (interaction.commandName === "slot") await slot.execute(interaction);
-  if (interaction.commandName === "tinfo") await tinfo.execute(interaction);
-  if (interaction.commandName === "tclear") await tclear.execute(interaction);
-  if (interaction.commandName === "tchannel") await tchannel.execute(interaction);
-  if (interaction.commandName === "winner") await winner.execute(interaction);
-  if (interaction.commandName === "wslot") await wslot.execute(interaction);
-  if (interaction.commandName === "wchannel") await wchannel.execute(interaction);
-  if (interaction.commandName === "wclear") await wclear.execute(interaction);
-  if (interaction.commandName === "tcancel") await tcancel.execute(interaction);
-  if (interaction.commandName === "tbackup") await tbackup.execute(interaction);
+  if (interaction.commandName === "serverinfo" && si) await si.execute(interaction);
+  if (interaction.commandName === "tournament" && tournament) await tournament.execute(interaction);
+  if (interaction.commandName === "slot" && slot) await slot.execute(interaction);
+  if (interaction.commandName === "tinfo" && tinfo) await tinfo.execute(interaction);
+  if (interaction.commandName === "tclear" && tclear) await tclear.execute(interaction);
+  if (interaction.commandName === "tchannel" && tchannel) await tchannel.execute(interaction);
+  if (interaction.commandName === "winner" && winner) await winner.execute(interaction);
+  if (interaction.commandName === "wslot" && wslot) await wslot.execute(interaction);
+  if (interaction.commandName === "wchannel" && wchannel) await wchannel.execute(interaction);
+  if (interaction.commandName === "wclear" && wclear) await wclear.execute(interaction);
+  if (interaction.commandName === "tcancel" && tcancel) await tcancel.execute(interaction);
+  if (interaction.commandName === "tbackup" && tbackup) await tbackup.execute(interaction);
 });
 
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
+  if (!tournament) return;
 
   const data = await tournament.getData();
   if (!data.tournaments || Object.keys(data.tournaments).length === 0) return;

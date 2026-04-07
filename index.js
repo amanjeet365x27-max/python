@@ -55,9 +55,9 @@ client.once("ready", async () => {
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: commands }
     );
-    console.log("Slash commands fully refreshed");
+    console.log("✅ Slash commands fully refreshed");
   } catch (error) {
-    console.error(error);
+    console.error("Command registration failed:", error);
   }
 });
 

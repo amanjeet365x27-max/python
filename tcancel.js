@@ -92,14 +92,14 @@ module.exports = {
       .setColor(0xff0000)
       .setTitle("❌ Slot Cancelled")
       .setDescription(
-        `**Tournament:** ${name}\n` +
-        `**Slot:** ${slotNumber}\n` +
-        `**Removed Team:** ${removedTeam.teamName}\n` +
-        `**IGL:** <@${removedTeam.leaderId}>\n` +
-        `**Team Members:** \( {removedTeam.members.map(id => `<@ \){id}>`).join(", ")}\n` +
-        `**Reason:** ${reason}\n` +
-        `**Cancelled by:** ${interaction.user.tag}\n\n` +
-        `Slot is now **EMPTY**.`
+        "**Tournament:** " + name + "\n" +
+        "**Slot:** " + slotNumber + "\n" +
+        "**Removed Team:** " + removedTeam.teamName + "\n" +
+        "**IGL:** <@" + removedTeam.leaderId + ">\n" +
+        "**Team Members:** " + removedTeam.members.map(id => "<@" + id + ">").join(", ") + "\n" +
+        "**Reason:** " + reason + "\n" +
+        "**Cancelled by:** " + interaction.user.tag + "\n\n" +
+        "Slot is now **EMPTY**."
       )
       .setFooter({ text: `Cancelled by ${interaction.user.tag}` });
 

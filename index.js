@@ -9,6 +9,8 @@ const winner = require("./winner");
 const wslot = require("./wslot");
 const wchannel = require("./wchannel");
 const wclear = require("./wclear");
+const tcancel = require("./tcancel"); // ✅ added
+const tbackup = require("./tbackup"); // ✅ added
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
@@ -41,25 +43,27 @@ client.once("clientReady", async () => {
     winner.data.toJSON(),
     wslot.data.toJSON(),
     wchannel.data.toJSON(),
-    wclear.data.toJSON()
+    wclear.data.toJSON(),
+    tcancel.data.toJSON(), // ✅ added
+    tbackup.data.toJSON()  // ✅ added
   ];
 
   const rest = new REST({ version: "10" }).setToken(TOKEN);
 
   try {
-    // 🔥 HARD RESET (THIS FIXES YOUR ISSUE)
+    // 🔥 HARD RESET
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: [] }
     );
 
-    // 🔥 REGISTER ALL COMMANDS AGAIN
+    // 🔥 REGISTER AGAIN
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: commands }
     );
 
-    console.log("Slash commands fully refreshed (including wclear)");
+    console.log("Slash commands fully refreshed (including tcancel & tbackup)");
   } catch (error) {
     console.error(error);
   }
@@ -91,6 +95,8 @@ client.on("interactionCreate", async (interaction) => {
   if (interaction.commandName === "wslot") await wslot.execute(interaction);
   if (interaction.commandName === "wchannel") await wchannel.execute(interaction);
   if (interaction.commandName === "wclear") await wclear.execute(interaction);
+  if (interaction.commandName === "tcancel") await tcancel.execute(interaction); // ✅ added
+  if (interaction.commandName === "tbackup") await tbackup.execute(interaction); // ✅ added
 });
 
 // ================= MESSAGE LISTENER =================
@@ -103,6 +109,12 @@ client.on("messageCreate", async (message) => {
   for (let tName in data.tournaments) {
     const t = data.tournaments[tName];
 
+    // ===== BACKUP REGISTRATION =====
+    if (t.backup && t.backup.enabled && message.channel.id === t.backup.channelId) {
+      return require("./tbackup").backupRegister(message, t);
+    }
+
+    // ===== NORMAL REGISTRATION =====
     if (message.channel.id !== t.channelId) continue;
 
     if (t.registrations && t.registrations.length >= t.slots) {

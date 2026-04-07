@@ -17,8 +17,6 @@ const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const GUILD_ID = "1429536669555757068";
 
-console.log("CLIENT_ID:", CLIENT_ID);
-
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -29,7 +27,7 @@ const client = new Client({
   ],
 });
 
-client.once("clientReady", async () => {
+client.once("ready", async () => {
   console.log(`Logged in as ${client.user.tag}`);
 
   client.user.setPresence({
@@ -52,22 +50,26 @@ client.once("clientReady", async () => {
     tbackup.data.toJSON()
   ];
 
-  commands.forEach(cmd => console.log(`Loaded command: ${cmd.name}`));
-
   const rest = new REST({ version: "10" }).setToken(TOKEN);
 
   try {
-    console.log("Registering slash commands...");
+    console.log("Clearing old commands...");
 
-    for (const cmd of commands) {
-      await rest.post(
-        Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-        { body: cmd }
-      );
-      console.log(`✅ Registered: ${cmd.name}`);
-    }
+    await rest.put(
+      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+      { body: [] }
+    );
 
-    console.log("✅ All slash commands registered");
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    console.log("Registering fresh commands...");
+
+    await rest.put(
+      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+      { body: commands }
+    );
+
+    console.log("✅ Slash commands fully refreshed");
   } catch (error) {
     console.error("❌ Registration failed:", error.rawError || error);
   }

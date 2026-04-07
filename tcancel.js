@@ -75,8 +75,8 @@ module.exports = {
     // ===== REMOVE SLOT (SHIFT LEFT) =====
     t.registrations.splice(index, 1);
 
-    // ✅ FIX: PREVENT AUTO REGISTRATION AFTER CANCEL
-    t.backupMode = false;
+    // ✅ IMPORTANT FIX: LOCK REGISTRATION
+    t.regClosed = true;
 
     // ===== SAVE TO POSTGRES =====
     data.tournaments[name] = t;

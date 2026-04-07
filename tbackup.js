@@ -132,7 +132,7 @@ module.exports = {
   validate(message, t) {
     const content = message.content.trim();
 
-    // TAKE ALL MENTIONS
+    // TAKE ALL MENTIONS (works across multiple lines)
     let mentions = [...message.mentions.users.keys()];
 
     // CUT EXTRA MENTIONS
@@ -142,15 +142,17 @@ module.exports = {
 
     mentions = mentions.slice(0, t.backup.mentions);
 
-    // TEAM NAME FLEXIBLE (same logic as tournament.js)
+    // TEAM NAME FLEXIBLE - improved to handle any format + multi-line + junk text
     let teamName;
 
-    const match = content.match(/team\s*name\s*[-:=\s]*\s*(.+)/i);
-    if (match) {
-      teamName = match[1].split("\n")[0].trim();
+    const match = content.match(/team\s*name\s*[-:=\s]*\s*(.+?)(?=\n|$)/i);
+    if (match && match[1]) {
+      teamName = match[1].trim();
     } else {
-      // fallback: first non-empty clean line (ignore junk lines)
-      const lines = content.split("\n").map(l => l.trim()).filter(l => l.length > 0 && !l.includes("<@"));
+      // fallback: first non-empty clean line that is not a mention line
+      const lines = content.split("\n")
+        .map(l => l.trim())
+        .filter(l => l.length > 0 && !l.match(/^<@!?[\d>]+$/));
       teamName = lines.length ? lines[0] : "No Name Team";
     }
 

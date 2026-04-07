@@ -1,4 +1,4 @@
-lconst { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const tournament = require("./tournament");
 
 module.exports = {

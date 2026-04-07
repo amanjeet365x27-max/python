@@ -112,21 +112,28 @@ module.exports = {
 
   validate(message, t) {
     const content = message.content.trim();
-    const match = content.match(/team\s*name\s*[-:=\s]*\s*(.+)/i);
 
-    const mentions = message.mentions.users;
+    // ✅ CLEAN MENTIONS (ignore extra text completely)
+    let mentionIds = [...message.mentions.users.keys()];
 
-    if (!mentions || mentions.size !== t.mentions) {
+    // ❌ LESS MENTIONS → ERROR (same as before)
+    if (mentionIds.length < t.mentions) {
       const embed = new EmbedBuilder()
         .setColor(0xff0000)
         .setTitle("❌ Wrong Number of Mentions!")
-        .setDescription(`You must mention **exactly ${t.mentions} players** (including yourself).`)
+        .setDescription(`You must mention **at least ${t.mentions} players** (including yourself).`)
         .setFooter({ text: "Make sure to include yourself in the mentions!" });
 
       return { error: true, embed };
     }
 
-    if (!mentions.has(message.author.id)) {
+    // ✅ MORE MENTIONS → TAKE ONLY REQUIRED
+    if (mentionIds.length > t.mentions) {
+      mentionIds = mentionIds.slice(0, t.mentions);
+    }
+
+    // ❌ USER NOT INCLUDED
+    if (!mentionIds.includes(message.author.id)) {
       const embed = new EmbedBuilder()
         .setColor(0xff0000)
         .setTitle("❌ You Must Include Yourself!")
@@ -136,19 +143,21 @@ module.exports = {
       return { error: true, embed };
     }
 
+    // ✅ TEAM NAME EXTRACTION (IGNORE RANDOM TEXT)
     let teamName;
+
+    const match = content.match(/team\s*name\s*[-:=\s]*\s*(.+)/i);
     if (match) {
       teamName = match[1].split("\n")[0].trim();
-      if (!teamName) return "Invalid team name.";
     } else {
-      const lines = content.split("\n");
-      teamName = lines[0].trim();
-      if (!teamName) return "Use format:\n**Team Name- YOUR TEAM NAME**\n@mentions";
+      // fallback: first non-empty clean line (ignore junk lines)
+      const lines = content.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+      teamName = lines.length ? lines[0] : `Team-${Date.now()}`;
     }
 
     return {
       teamName,
-      members: [...mentions.keys()]
+      members: mentionIds
     };
   },
 

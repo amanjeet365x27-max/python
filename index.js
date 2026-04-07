@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, REST, Routes } = require("discord.js");
+const { Client, GatewayIntentBits } = require("discord.js");
 
 const si = require("./si");
 const tournament = require("./tournament");
@@ -14,8 +14,6 @@ const tcancel = require("./tcancel");
 const tbackup = require("./tbackup");
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
-const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
-const GUILD_ID = "1429536669555757068";
 
 const client = new Client({
   intents: [
@@ -34,51 +32,6 @@ client.once("clientReady", async () => {
     activities: [{ name: "HEROIC HUSTLE KI JAY", type: 0 }],
     status: "online"
   });
-
-  const commands = [
-    si.data.toJSON(),
-    tournament.data.toJSON(),
-    slot.data.toJSON(),
-    tinfo.data.toJSON(),
-    tclear.data.toJSON(),
-    tchannel.data.toJSON(),
-    winner.data.toJSON(),
-    wslot.data.toJSON(),
-    wchannel.data.toJSON(),
-    wclear.data.toJSON(),
-    tcancel.data.toJSON(),
-    tbackup.data.toJSON()
-  ];
-
-  const rest = new REST({ version: "10" }).setToken(TOKEN);
-
-  try {
-    console.log("Clearing old commands...");
-
-    await rest.put(
-      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-      { body: [] }
-    );
-
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    console.log("Registering commands safely...");
-
-    const register = rest.put(
-      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-      { body: commands }
-    );
-
-    const timeout = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Discord API timeout")), 15000)
-    );
-
-    await Promise.race([register, timeout]);
-
-    console.log("✅ Slash commands fully refreshed");
-  } catch (error) {
-    console.error("❌ Registration failed:", error.message || error);
-  }
 });
 
 client.on("guildMemberAdd", () => {

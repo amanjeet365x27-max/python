@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+lconst { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const tournament = require("./tournament");
 
 module.exports = {
@@ -152,7 +152,18 @@ module.exports = {
       return message.reply(result);
     }
 
-    if (t.backup.filled >= t.backup.slots) return;
+    if (t.backup.filled >= t.backup.slots) {
+      return message.reply("All backup slots are already filled.");
+    }
+
+    // ===== CHECK IF ALREADY REGISTERED =====
+    const already = t.registrations.some(
+      r => r && (r.leaderId === message.author.id || r.members.includes(message.author.id))
+    );
+
+    if (already) {
+      return message.reply("You or your team are already registered.");
+    }
 
     t.backup.filled++;
 

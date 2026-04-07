@@ -51,19 +51,17 @@ client.once("clientReady", async () => {
   const rest = new REST({ version: "10" }).setToken(TOKEN);
 
   try {
-    // 🔥 HARD RESET
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: [] }
     );
 
-    // 🔥 REGISTER AGAIN
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: commands }
     );
 
-    console.log("Slash commands fully refreshed (including tcancel & tbackup)");
+    console.log("Slash commands fully refreshed");
   } catch (error) {
     console.error(error);
   }
@@ -109,15 +107,15 @@ client.on("messageCreate", async (message) => {
   for (let tName in data.tournaments) {
     const t = data.tournaments[tName];
 
-    // ===== BACKUP REGISTRATION =====
-    if (t.backup && t.backup.enabled && message.channel.id === t.backup.channelId) {
-      return require("./tbackup").backupRegister(message, t);
-    }
-
-    // ===== NORMAL REGISTRATION =====
     if (message.channel.id !== t.channelId) continue;
 
+    // ❌ FULL → STOP
     if (t.registrations && t.registrations.length >= t.slots) {
+      return;
+    }
+
+    // ❌ AFTER CANCEL → DON'T AUTO START AGAIN
+    if (t.backupMode !== true && t.registrations.length < t.slots && t.registrations.length !== 0) {
       return;
     }
 

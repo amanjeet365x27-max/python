@@ -1,5 +1,4 @@
 const { Client, GatewayIntentBits, REST, Routes } = require("discord.js");
-
 const si = require("./si");
 const tournament = require("./tournament");
 const slot = require("./slot");
@@ -10,8 +9,8 @@ const winner = require("./winner");
 const wslot = require("./wslot");
 const wchannel = require("./wchannel");
 const wclear = require("./wclear");
-const tcancel = require("./tcancel");
-const tbackup = require("./tbackup");
+const tcancel = require("./tcancel"); // ✅ added
+const tbackup = require("./tbackup"); // ✅ added
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
@@ -27,7 +26,7 @@ const client = new Client({
   ],
 });
 
-client.once("ready", async () => {
+client.once("clientReady", async () => {
   console.log(`Logged in as ${client.user.tag}`);
   client.user.setPresence({
     activities: [{ name: "HEROIC HUSTLE KI JAY", type: 0 }],
@@ -45,8 +44,8 @@ client.once("ready", async () => {
     wslot.data.toJSON(),
     wchannel.data.toJSON(),
     wclear.data.toJSON(),
-    tcancel.data.toJSON(),
-    tbackup.data.toJSON()
+    tcancel.data.toJSON(), // ✅ added
+    tbackup.data.toJSON()  // ✅ added
   ];
 
   const rest = new REST({ version: "10" }).setToken(TOKEN);
@@ -54,14 +53,21 @@ client.once("ready", async () => {
   try {
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+      { body: [] }
+    );
+
+    await rest.put(
+      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: commands }
     );
+
     console.log("Slash commands fully refreshed");
   } catch (error) {
     console.error(error);
   }
 });
 
+// ================= JOIN/LEAVE TRACKING =================
 client.on("guildMemberAdd", () => {
   const now = Date.now();
   si.joins.push(now);
@@ -74,9 +80,9 @@ client.on("guildMemberRemove", () => {
   si.leaves = si.leaves.filter(t => now - t < 86400000);
 });
 
+// ================= COMMAND HANDLER =================
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
-
   if (interaction.commandName === "serverinfo") await si.execute(interaction);
   if (interaction.commandName === "tournament") await tournament.execute(interaction);
   if (interaction.commandName === "slot") await slot.execute(interaction);
@@ -87,10 +93,11 @@ client.on("interactionCreate", async (interaction) => {
   if (interaction.commandName === "wslot") await wslot.execute(interaction);
   if (interaction.commandName === "wchannel") await wchannel.execute(interaction);
   if (interaction.commandName === "wclear") await wclear.execute(interaction);
-  if (interaction.commandName === "tcancel") await tcancel.execute(interaction);
-  if (interaction.commandName === "tbackup") await tbackup.execute(interaction);
+  if (interaction.commandName === "tcancel") await tcancel.execute(interaction); // ✅ added
+  if (interaction.commandName === "tbackup") await tbackup.execute(interaction); // ✅ added
 });
 
+// ================= MESSAGE LISTENER =================
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
@@ -102,13 +109,20 @@ client.on("messageCreate", async (message) => {
 
     if (message.channel.id !== t.channelId) continue;
 
-    if (t.registrations && t.registrations.length >= t.slots) return;
+    // ❌ FULL → STOP
+    if (t.registrations && t.registrations.length >= t.slots) {
+      return;
+    }
 
-    if (t.backupMode !== true && t.registrations.length < t.slots && t.registrations.length !== 0) return;
+    // ❌ AFTER CANCEL → DON'T AUTO START AGAIN
+    if (t.backupMode !== true && t.registrations.length < t.slots && t.registrations.length !== 0) {
+      return;
+    }
 
     await tournament.register(message, t);
     return;
   }
 });
 
+// ================= LOGIN =================
 client.login(TOKEN);

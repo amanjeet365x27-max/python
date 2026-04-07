@@ -95,6 +95,8 @@ module.exports = {
         `**Tournament:** ${name}\n` +
         `**Slot:** ${slotNumber}\n` +
         `**Removed Team:** ${removedTeam.teamName}\n` +
+        `**IGL:** <@${removedTeam.leaderId}>\n` +
+        `**Team Members:** \( {removedTeam.members.map(id => `<@ \){id}>`).join(", ")}\n` +
         `**Reason:** ${reason}\n\n` +
         `Slot is now **EMPTY**.`
       )

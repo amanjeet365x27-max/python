@@ -12,6 +12,10 @@ module.exports = {
     .addIntegerOption(o =>
       o.setName("slot")
         .setDescription("Slot number to cancel")
+        .setRequired(true))
+    .addStringOption(o =>
+      o.setName("reason")
+        .setDescription("Reason for cancellation")
         .setRequired(true)),
 
   async execute(interaction) {
@@ -24,6 +28,7 @@ module.exports = {
 
     const name = interaction.options.getString("name").trim();
     const slotNumber = interaction.options.getInteger("slot");
+    const reason = interaction.options.getString("reason");
 
     let data = await tournament.getData();
 
@@ -89,10 +94,13 @@ module.exports = {
       .setDescription(
         `**Tournament:** ${name}\n` +
         `**Slot:** ${slotNumber}\n` +
-        `**Removed Team:** ${removedTeam.teamName}\n\n` +
+        `**Removed Team:** ${removedTeam.teamName}\n` +
+        `**Reason:** ${reason}\n\n` +
         `Slot is now **EMPTY**.`
       )
       .setFooter({ text: `Cancelled by ${interaction.user.tag}` });
+
+    await interaction.channel.send({ embeds: [embed] });
 
     await interaction.reply({
       embeds: [embed],

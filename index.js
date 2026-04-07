@@ -26,6 +26,8 @@ const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const GUILD_ID = "1429536669555757068";
 
+console.log("CLIENT_ID:", CLIENT_ID);
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -73,6 +75,7 @@ client.once("clientReady", async () => {
   const rest = new REST({ version: "10" }).setToken(TOKEN);
 
   try {
+    console.log("Registering slash commands...");
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: commands }

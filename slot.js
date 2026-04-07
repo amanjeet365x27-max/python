@@ -34,18 +34,24 @@ module.exports = {
     }
 
     let desc = "";
-    t.registrations.forEach((team, i) => {
-      desc += `**• Slot ${i + 1}**\n` +
-              `**Team:** ${team.teamName}\n` +
-              `**IGL:** <@${team.leaderId}>\n` +
-              `**Members:** ${team.members.map(id => `<@${id}>`).join(", ")}\n\n`;
-    });
+    for (let i = 0; i < t.slots; i++) {
+      const team = t.registrations[i];
+      if (team) {
+        desc += `**• Slot ${i + 1}**\n` +
+                `**Team:** ${team.teamName}\n` +
+                `**IGL:** <@${team.leaderId}>\n` +
+                `**Members:** ${team.members.map(id => `<@${id}>`).join(", ")}\n\n`;
+      } else {
+        desc += `**• Slot ${i + 1}**\n` +
+                `**EMPTY SLOT**\n\n`;
+      }
+    }
 
     const embed = new EmbedBuilder()
       .setColor(0x00ffff)
       .setTitle(`**Slots - ${t.name}**`)
       .setDescription(desc)
-      .setFooter({ text: `Total Slots: ${t.slots} | Filled: ${t.registrations.length}` });
+      .setFooter({ text: `Total Slots: ${t.slots} | Filled: ${t.registrations.filter(r => r != null).length}` });
 
     await interaction.reply({ embeds: [embed] });
   }

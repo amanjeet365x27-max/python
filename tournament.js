@@ -162,6 +162,8 @@ module.exports = {
   },
 
   async register(message, t) {
+    if (t.regClosed) return;
+
     const result = this.validate(message, t);
     if (result.error && result.embed) {
       return message.reply({ embeds: [result.embed] });

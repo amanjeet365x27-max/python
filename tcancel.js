@@ -91,15 +91,7 @@ module.exports = {
     const embed = new EmbedBuilder()
       .setColor(0xff0000)
       .setTitle("❌ Slot Cancelled")
-      .setDescription(
-        `**Tournament:** ${name}\n` +
-        `**Slot:** ${slotNumber}\n` +
-        `**Removed Team:** ${removedTeam.teamName}\n` +
-        `**IGL:** <@${removedTeam.leaderId}>\n` +
-        `**Team Members:** \( {removedTeam.members.map(id => `<@ \){id}>`).join(", ")}\n` +
-        `**Reason:** ${reason}\n\n` +
-        `Slot is now **EMPTY**.`
-      )
+      .setDescription(`**Tournament:** ${name}\n**Slot:** ${slotNumber}\n**Removed Team:** \( {removedTeam.teamName}\n**IGL:** <@ \){removedTeam.leaderId}>\n**Team Members:** \( {removedTeam.members.map(id => `<@ \){id}>`).join(", ")}\n**Reason:** ${reason}\n**Cancelled by:** ${interaction.user.tag}\n\nSlot is now **EMPTY**.`)
       .setFooter({ text: `Cancelled by ${interaction.user.tag}` });
 
     await interaction.channel.send({ embeds: [embed] });

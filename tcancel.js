@@ -72,8 +72,8 @@ module.exports = {
       }
     }
 
-    // ===== REMOVE SLOT (SHIFT LEFT) =====
-    t.registrations.splice(index, 1);
+    // ===== REMOVE SLOT (KEEP EMPTY, NO SHIFT) =====
+    t.registrations[index] = null;
 
     // ✅ IMPORTANT FIX: LOCK REGISTRATION
     t.regClosed = true;

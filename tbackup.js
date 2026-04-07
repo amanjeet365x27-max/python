@@ -142,19 +142,26 @@ module.exports = {
 
     mentions = mentions.slice(0, t.backup.mentions);
 
-    // TEAM NAME FLEXIBLE - improved to handle any format + multi-line + junk text
+    // TEAM NAME FLEXIBLE - FIXED: mentions NEVER appear in team name
     let teamName;
 
     const match = content.match(/team\s*name\s*[-:=\s]*\s*(.+?)(?=\n|$)/i);
     if (match && match[1]) {
       teamName = match[1].trim();
     } else {
-      // fallback: first non-empty clean line that is not a mention line
+      // fallback: first non-empty clean line (mentions removed)
       const lines = content.split("\n")
         .map(l => l.trim())
-        .filter(l => l.length > 0 && !l.match(/^<@!?[\d>]+$/));
+        .filter(l => l.length > 0)
+        .map(l => l.replace(/<@!?[\d]+>/g, '').trim())
+        .filter(l => l.length > 0);
       teamName = lines.length ? lines[0] : "No Name Team";
     }
+
+    // Final safety: remove any leftover mention text from team name
+    teamName = teamName.replace(/<@!?[\d]+>/g, '').trim();
+
+    if (!teamName) teamName = "No Name Team";
 
     return {
       teamName,

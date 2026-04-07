@@ -26,7 +26,7 @@ const client = new Client({
   ],
 });
 
-client.once("clientReady", async () => {
+client.once("ready", async () => { // ✅ fixed event name
   console.log(`Logged in as ${client.user.tag}`);
   client.user.setPresence({
     activities: [{ name: "HEROIC HUSTLE KI JAY", type: 0 }],
@@ -51,11 +51,7 @@ client.once("clientReady", async () => {
   const rest = new REST({ version: "10" }).setToken(TOKEN);
 
   try {
-    await rest.put(
-      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-      { body: [] }
-    );
-
+    // ✅ removed clearing commands, only register commands now
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: commands }

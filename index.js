@@ -10,7 +10,7 @@ const wslot = require("./wslot");
 const wchannel = require("./wchannel");
 const wclear = require("./wclear");
 const tcancel = require("./tcancel"); // ✅ added
-const tbackup = require("./tbackup"); // ✅ added
+// const tbackup = require("./tbackup"); // ✅ TEMPORARILY COMMENTED - this file is crashing command registration
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
@@ -45,7 +45,7 @@ client.once("ready", async () => {
     wchannel.data.toJSON(),
     wclear.data.toJSON(),
     tcancel.data.toJSON(), // ✅ added
-    tbackup.data.toJSON()  // ✅ added
+    // tbackup.data.toJSON() // ✅ TEMPORARILY COMMENTED - this file is crashing command registration
   ];
 
   const rest = new REST({ version: "10" }).setToken(TOKEN);
@@ -94,7 +94,7 @@ client.on("interactionCreate", async (interaction) => {
   if (interaction.commandName === "wchannel") await wchannel.execute(interaction);
   if (interaction.commandName === "wclear") await wclear.execute(interaction);
   if (interaction.commandName === "tcancel") await tcancel.execute(interaction); // ✅ added
-  if (interaction.commandName === "tbackup") await tbackup.execute(interaction); // ✅ added
+  // if (interaction.commandName === "tbackup") await tbackup.execute(interaction); // ✅ TEMPORARILY COMMENTED
 });
 
 // ================= MESSAGE LISTENER =================

@@ -75,7 +75,7 @@ module.exports = {
     if (logChannel) {
       const logEmbed = new EmbedBuilder()
         .setColor(0xff0000)
-        .setTitle("SLOT CANCELLED ❌")
+        .setTitle("❌ SLOT CANCELLED - OFFICIAL LOG")
         .setDescription("**A SLOT HAS BEEN CANCELLED BY ADMIN**")
         .addFields(
           { name: "🏆 Tournament", value: `**${name}**`, inline: true },
@@ -104,7 +104,7 @@ module.exports = {
       .setFooter({ text: `Cancelled by ${interaction.user.tag}` });
     await interaction.reply({
       embeds: [embed],
-      ephemeral: true
+      flags: 64   // This replaces the old ephemeral: true (no deprecation warning)
     });
   }
 };

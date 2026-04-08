@@ -38,26 +38,45 @@ module.exports = {
       });
     }
 
-    const maxFieldsPerEmbed = 25;
+    const winnersList = t.winners;
+    const total = winnersList.length;
+    const mid = Math.ceil(total / 2);
     const embeds = [];
 
-    for (let i = 0; i < t.winners.length; i += maxFieldsPerEmbed) {
-      const embed = new EmbedBuilder()
+    // First half
+    const embed1 = new EmbedBuilder()
+      .setColor(0xffd700)
+      .setTitle(`🏆 ${tournamentName.toUpperCase()} SLOTLIST 🏆`)
+      .setFooter({ text: "Heroic Hustle" })
+      .setTimestamp();
+
+    for (let i = 0; i < mid; i++) {
+      const w = winnersList[i];
+      embed1.addFields({
+        name: `🔥 SLOT ${i + 1} — ${w.teamName}`,
+        value: `👑 **IGL:** <@${w.igl}>`,
+        inline: false
+      });
+    }
+    embeds.push(embed1);
+
+    // Second half (only if needed)
+    if (mid < total) {
+      const embed2 = new EmbedBuilder()
         .setColor(0xffd700)
         .setTitle(`🏆 ${tournamentName.toUpperCase()} SLOTLIST 🏆`)
         .setFooter({ text: "Heroic Hustle" })
         .setTimestamp();
 
-      const end = Math.min(i + maxFieldsPerEmbed, t.winners.length);
-      for (let j = i; j < end; j++) {
-        const w = t.winners[j];
-        embed.addFields({
-          name: `🔥 SLOT ${j + 1} — ${w.teamName}`,
+      for (let i = mid; i < total; i++) {
+        const w = winnersList[i];
+        embed2.addFields({
+          name: `🔥 SLOT ${i + 1} — ${w.teamName}`,
           value: `👑 **IGL:** <@${w.igl}>`,
           inline: false
         });
       }
-      embeds.push(embed);
+      embeds.push(embed2);
     }
 
     await interaction.reply({ embeds: embeds });

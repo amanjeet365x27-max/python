@@ -26,7 +26,7 @@ const client = new Client({
   ],
 });
 
-// ✅ CORRECT FOR DISCORD.JS V14+: Use "clientReady"
+// ✅ REGISTER COMMANDS GLOBALLY + GUILD
 client.once("clientReady", async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
   
@@ -53,12 +53,22 @@ client.once("clientReady", async () => {
   const rest = new REST({ version: "10" }).setToken(TOKEN);
   
   try {
-    console.log("🔄 Refreshing slash commands...");
+    console.log(`🔄 Started refreshing ${commands.length} application (/) commands.`);
+    
+    // ✅ REGISTER TO SPECIFIC GUILD (INSTANT)
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: commands }
     );
-    console.log("✅ Slash commands fully refreshed!");
+    console.log(`✅ Successfully registered ${commands.length} guild commands!`);
+    
+    // ✅ REGISTER GLOBALLY (TAKES UP TO 1 HOUR)
+    await rest.put(
+      Routes.applicationCommands(CLIENT_ID),
+      { body: commands }
+    );
+    console.log(`✅ Successfully registered ${commands.length} global commands!`);
+    
   } catch (error) {
     console.error("❌ Error refreshing commands:", error);
   }

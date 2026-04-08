@@ -84,7 +84,16 @@ client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   try {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply();
+
+    // 🔥 OVERRIDE reply → editReply automatically
+    const originalReply = interaction.reply.bind(interaction);
+    interaction.reply = (options) => {
+      if (interaction.deferred || interaction.replied) {
+        return interaction.editReply(options);
+      }
+      return originalReply(options);
+    };
 
     if (interaction.commandName === "serverinfo") await si.execute(interaction);
     if (interaction.commandName === "tournament") await tournament.execute(interaction);
@@ -105,7 +114,7 @@ client.on("interactionCreate", async (interaction) => {
     if (interaction.deferred || interaction.replied) {
       await interaction.editReply({ content: "❌ Error while executing command." });
     } else {
-      await interaction.reply({ content: "❌ Error while executing command.", ephemeral: true });
+      await interaction.reply({ content: "❌ Error while executing command." });
     }
   }
 });

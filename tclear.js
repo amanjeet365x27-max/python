@@ -1,7 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const tournament = require("./tournament");
 const pool = require("./db"); // <-- We use pool directly for clean delete
-
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("tclear")
@@ -27,6 +26,9 @@ module.exports = {
     // 1. Delete team roles
     if (t.registrations && t.registrations.length > 0) {
       for (let reg of t.registrations) {
+        // === SAFETY CHECK - Prevent crash if slot is empty (null) ===
+        if (!reg) continue;
+
         const roleName = reg.teamName.replace(/[<>@]/g, "").trim();
         const role = interaction.guild.roles.cache.find(r => r.name === roleName);
         if (role) {
@@ -64,18 +66,14 @@ module.exports = {
         .setFooter({ text: `Cleared by ${interaction.user.tag}` });
       await channel.send({ embeds: [clearedEmbed] });
     }
-
     // ================= FIXED: DELETE ALL CATEGORIES + MATCH CHANNELS =================
     let deletedCategories = 0;
     let deletedChannels = 0;
-
     const targetName = `Tournament - ${name}`.toLowerCase();
-
     // Find all categories that match the tournament name (handles multiple + mode suffix like (CS))
-    const categoriesToDelete = interaction.guild.channels.cache.filter(c => 
+    const categoriesToDelete = interaction.guild.channels.cache.filter(c =>
       c.type === 4 && c.name.toLowerCase().startsWith(targetName)
     );
-
     for (const category of categoriesToDelete.values()) {
       try {
         // Delete all children first
@@ -88,7 +86,6 @@ module.exports = {
             console.log(`Failed to delete child channel ${child.name}:`, e.message);
           }
         }
-
         // Delete the category
         await category.delete(`Tournament ${name} cleared`);
         deletedCategories++;
@@ -96,13 +93,11 @@ module.exports = {
         console.log(`Failed to delete category ${category.name}:`, e.message);
       }
     }
-
     // Extra safety: Delete any leftover match-* channels that might not be in the category
-    const leftoverMatchChannels = interaction.guild.channels.cache.filter(c => 
-      c.type === 0 && c.name.toLowerCase().startsWith("match-") && 
+    const leftoverMatchChannels = interaction.guild.channels.cache.filter(c =>
+      c.type === 0 && c.name.toLowerCase().startsWith("match-") &&
       !c.parent && c.name.toLowerCase().includes(name.toLowerCase().replace(/ /g, '-'))
     );
-
     for (const ch of leftoverMatchChannels.values()) {
       try {
         await ch.delete(`Tournament ${name} cleared (leftover)`);
@@ -111,14 +106,12 @@ module.exports = {
         console.log(`Failed to delete leftover channel ${ch.name}:`, e.message);
       }
     }
-
     // Final reply with summary
     let summary = `✅ Tournament **${name}** has been **fully cleared** from the system!`;
-    
+   
     if (deletedCategories > 0 || deletedChannels > 0) {
       summary += `\n🗑️ Deleted **${deletedCategories}** category(s) and **${deletedChannels}** channel(s).`;
     }
-
     await interaction.reply({
       content: summary,
       ephemeral: true

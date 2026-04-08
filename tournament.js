@@ -32,7 +32,6 @@ async function saveData(data) {
 function formatTime(input) {
   if (!input) return null;
   let t = input.toLowerCase().replace(/\s/g, "");
-
   let match = t.match(/^(\d{1,2})(am|pm)$/);
   if (match) {
     let hour = parseInt(match[1]);
@@ -40,14 +39,12 @@ function formatTime(input) {
     if (match[2] === "am" && hour === 12) hour = 0;
     return `${hour.toString().padStart(2, "0")}:00`;
   }
-
   match = t.match(/^(\d{1,2}):(\d{2})$/);
   if (match) {
     let hour = parseInt(match[1]);
     let min = match[2];
     return `${hour.toString().padStart(2, "0")}:${min}`;
   }
-
   return input;
 }
 
@@ -89,8 +86,11 @@ module.exports = {
     const channel = interaction.options.getChannel("channel");
     const ping = interaction.options.getString("ping");
     let time = interaction.options.getString("time");
-
-    time = formatTime(time);
+    
+    // FIXED: Only format time if user actually provided it
+    if (time) {
+      time = formatTime(time);
+    }
 
     const data = await loadData();
     if (!data.tournaments) data.tournaments = {};
@@ -152,9 +152,7 @@ module.exports = {
 
   validate(message, t) {
     const content = message.content.trim();
-
     let mentionIds = [...message.mentions.users.keys()];
-
     if (mentionIds.length < t.mentions) {
       const embed = new EmbedBuilder()
         .setColor(0xff0000)
@@ -163,11 +161,9 @@ module.exports = {
         .setFooter({ text: "Make sure to include yourself in the mentions!" });
       return { error: true, embed };
     }
-
     if (mentionIds.length > t.mentions) {
       mentionIds = mentionIds.slice(0, t.mentions);
     }
-
     if (!mentionIds.includes(message.author.id)) {
       const embed = new EmbedBuilder()
         .setColor(0xff0000)
@@ -176,19 +172,15 @@ module.exports = {
         .setFooter({ text: "Mention yourself as the team leader." });
       return { error: true, embed };
     }
-
     let teamName;
     const match = content.match(/team\s*name\s*[-:=\s]*\s*(.+)/i);
-
     if (match) {
       teamName = match[1].split("\n")[0].trim();
     } else {
       const lines = content.split("\n").map(l => l.trim()).filter(l => l.length > 0);
       teamName = lines.length ? lines[0] : `Team-${Date.now()}`;
     }
-
     teamName = teamName.replace(/<@!?[\d]+>/g, '').trim() || `Team-${Date.now()}`;
-
     return {
       teamName,
       members: mentionIds
@@ -197,25 +189,19 @@ module.exports = {
 
   async register(message, t) {
     if (t.regClosed) return;
-
     if (t.registrations.length >= t.slots) {
       return message.reply("❌ Slots are already full.");
     }
-
     const result = this.validate(message, t);
-
     if (result.error && result.embed) {
       return message.reply({ embeds: [result.embed] });
     }
-
     if (typeof result === "string") {
       return message.reply(result);
     }
-
     for (let i = 0; i < t.registrations.length; i++) {
       const team = t.registrations[i];
       const alreadyInTeam = result.members.filter(id => team.members.includes(id));
-
       if (alreadyInTeam.length > 0) {
         const conflictEmbed = new EmbedBuilder()
           .setColor(0xff0000)
@@ -230,21 +216,17 @@ module.exports = {
         return message.reply({ embeds: [conflictEmbed] });
       }
     }
-
     t.registrations.push({
       teamName: result.teamName,
       members: result.members,
       leaderId: message.author.id
     });
-
     const cleanTeamName = result.teamName
       .replace(/[<>@#]/g, "")
       .replace(/[^a-zA-Z0-9\s-_]/g, "")
       .trim()
       .slice(0, 90);
-
     let role;
-
     try {
       role = await message.guild.roles.create({
         name: cleanTeamName || `Team ${t.registrations.length}`,
@@ -254,25 +236,20 @@ module.exports = {
     } catch (err) {
       console.error("Role creation failed:", err);
     }
-
     try {
       const iglMember = await message.guild.members.fetch(message.author.id).catch(() => null);
       if (role && iglMember) await iglMember.roles.add(role);
     } catch (err) {
       console.error("Role assign failed:", err);
     }
-
     const fullData = await this.getData();
     fullData.tournaments[t.name] = t;
-
     try {
       await this.saveData(fullData);
     } catch (err) {
       console.error("DB save failed:", err);
     }
-
     const slotsRemaining = t.slots - t.registrations.length;
-
     const confirmEmbed = new EmbedBuilder()
       .setColor(0x00ff00)
       .setTitle("✅ Registration Confirmed!")
@@ -283,21 +260,17 @@ module.exports = {
         "**Slots Remaining:** " + slotsRemaining + " / " + t.slots
       )
       .setThumbnail("https://i.pinimg.com/originals/e8/06/52/e80652af2c77e3a73858e16b2ffe5f9a.gif");
-
     await message.channel.send({ embeds: [confirmEmbed] });
-
     if (t.registrations.length >= t.slots) {
       await message.channel.permissionOverwrites.edit(
         message.guild.roles.everyone,
         { SendMessages: false, ViewChannel: true }
       );
-
       const closeEmbed = new EmbedBuilder()
         .setColor(0xff0000)
         .setTitle("🛑 Registration Closed")
         .setDescription("All slots are filled. Registration is now closed.")
         .setImage("https://official.garena.com/intl/v1/config/gallery_esport01.jpg");
-
       await message.channel.send({ embeds: [closeEmbed] });
     }
   }

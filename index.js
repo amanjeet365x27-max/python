@@ -26,7 +26,7 @@ const client = new Client({
   ],
 });
 
-client.once("clientReady", async () => {
+client.once("ready", async () => {
   console.log(`Logged in as ${client.user.tag}`);
   client.user.setPresence({
     activities: [{ name: "HEROIC HUSTLE KI JAY", type: 0 }],

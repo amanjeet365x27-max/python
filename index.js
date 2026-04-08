@@ -26,7 +26,7 @@ const client = new Client({
   ],
 });
 
-client.once("ready", async () => {
+client.once("clientReady", async () => {
   console.log(`Logged in as ${client.user.tag}`);
   client.user.setPresence({
     activities: [{ name: "HEROIC HUSTLE KI JAY", type: 0 }],
@@ -55,15 +55,16 @@ client.once("ready", async () => {
   try {
     console.log("Refreshing commands...");
 
-    await rest.put(
+    const res = await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: commands }
     );
 
     console.log("Slash commands fully refreshed");
+    console.log("Registered commands:", res.length);
   } catch (error) {
-    console.error("FULL ERROR:");
-    console.error(error);
+    console.error("❌ FULL ERROR BELOW:");
+    console.error(JSON.stringify(error, null, 2));
   }
 });
 

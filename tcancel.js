@@ -57,7 +57,7 @@ module.exports = {
     const index = slotNumber - 1;
     const removedTeam = t.registrations[index];
 
-    // Safety check - if slot is already empty
+    // === SAFETY CHECK - Prevent crash if slot is empty ===
     if (!removedTeam) {
       return interaction.reply({
         content: `Slot ${slotNumber} is already empty.`,
@@ -109,7 +109,7 @@ module.exports = {
       await logChannel.send({ embeds: [logEmbed] });
     }
 
-    // ===== PRIVATE REPLY TO ADMIN =====
+    // ===== EMBED =====
     const embed = new EmbedBuilder()
       .setColor(0xff0000)
       .setTitle("❌ Slot Cancelled")

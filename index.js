@@ -1,66 +1,29 @@
-const { Client, GatewayIntentBits, REST, Routes } = require("discord.js");
-const si = require("./si");
-const tournament = require("./tournament");
-const slot = require("./slot");
-const tinfo = require("./tinfo");
-const tclear = require("./tclear");
-const tchannel = require("./tchannel");
-const winner = require("./winner");
-const wslot = require("./wslot");
-const wchannel = require("./wchannel");
-const wclear = require("./wclear");
-const tcancel = require("./tcancel");
-const tbackup = require("./tbackup");
-
-const TOKEN = process.env.DISCORD_BOT_TOKEN;
-const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
-
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildPresences,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ],
-});
-
-client.once("clientReady", async () => {
-  console.log(`Logged in as ${client.user.tag}`);
-
-  const commands = [
-    si.data.toJSON(),
-    tournament.data.toJSON(),
-    slot.data.toJSON(),
-    tinfo.data.toJSON(),
-    tclear.data.toJSON(),
-    tchannel.data.toJSON(),
-    winner.data.toJSON(),
-    wslot.data.toJSON(),
-    wchannel.data.toJSON(),
-    wclear.data.toJSON(),
-    tcancel.data.toJSON(),
-    tbackup.data.toJSON()
-  ];
-
-  console.log(`Built ${commands.length} commands`);
-
-  const rest = new REST({ version: "10" }).setToken(TOKEN);
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
 
   try {
-    console.log("Registering GLOBAL commands...");
+    await interaction.deferReply({ ephemeral: true });
 
-    await rest.put(
-      Routes.applicationCommands(CLIENT_ID),
-      { body: commands }
-    );
+    if (interaction.commandName === "serverinfo") await si.execute(interaction);
+    if (interaction.commandName === "tournament") await tournament.execute(interaction);
+    if (interaction.commandName === "slot") await slot.execute(interaction);
+    if (interaction.commandName === "tinfo") await tinfo.execute(interaction);
+    if (interaction.commandName === "tclear") await tclear.execute(interaction);
+    if (interaction.commandName === "tchannel") await tchannel.execute(interaction);
+    if (interaction.commandName === "winner") await winner.execute(interaction);
+    if (interaction.commandName === "wslot") await wslot.execute(interaction);
+    if (interaction.commandName === "wchannel") await wchannel.execute(interaction);
+    if (interaction.commandName === "wclear") await wclear.execute(interaction);
+    if (interaction.commandName === "tcancel") await tcancel.execute(interaction);
+    if (interaction.commandName === "tbackup") await tbackup.execute(interaction);
 
-    console.log("✅ GLOBAL commands registered");
   } catch (err) {
-    console.error("❌ ERROR:");
-    console.error(err);
+    console.error("Command Error:", err);
+
+    if (interaction.deferred || interaction.replied) {
+      await interaction.editReply({ content: "❌ Error while executing command." });
+    } else {
+      await interaction.reply({ content: "❌ Error while executing command.", ephemeral: true });
+    }
   }
 });
-
-// ================= LOGIN =================
-client.login(TOKEN);

@@ -9,7 +9,7 @@ const winner = require("./winner");
 const wslot = require("./wslot");
 const wchannel = require("./wchannel");
 const wclear = require("./wclear");
-const tcancel = require("./tcancel");
+// const tcancel = require("./tcancel"); // TEMPORARILY COMMENTED OUT
 const tbackup = require("./tbackup");
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
@@ -45,7 +45,7 @@ client.once("clientReady", async () => {
     wslot.data.toJSON(),
     wchannel.data.toJSON(),
     wclear.data.toJSON(),
-    tcancel.data.toJSON(),
+    // tcancel.data.toJSON(), // TEMPORARILY COMMENTED OUT
     tbackup.data.toJSON()
   ];
 
@@ -56,7 +56,6 @@ client.once("clientReady", async () => {
   try {
     console.log(`🔄 Started refreshing ${commands.length} application (/) commands.`);
     
-    // Delete existing commands first
     console.log("🗑️ Clearing old commands...");
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
@@ -64,26 +63,24 @@ client.once("clientReady", async () => {
     );
     console.log("✅ Old commands cleared!");
     
-    // Wait a moment
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Register new commands
     console.log("📤 Registering new guild commands...");
     const result = await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: commands }
     );
     
-    console.log(`✅ Successfully registered ${result.length} guild commands!`);
-    console.log(`📋 Registered commands: ${result.map(c => c.name).join(", ")}`);
+    console.log(`✅ SUCCESS! Registered ${result.length} guild commands!`);
+    console.log(`📋 Active commands: ${result.map(c => c.name).join(", ")}`);
     
   } catch (error) {
-    console.error("❌ FULL ERROR:", error);
+    console.error("❌ REGISTRATION FAILED!");
+    console.error("Error name:", error.name);
+    console.error("Error message:", error.message);
+    console.error("Error code:", error.code);
     if (error.rawError) {
-      console.error("❌ Raw Error Details:", JSON.stringify(error.rawError, null, 2));
-    }
-    if (error.requestBody) {
-      console.error("❌ Request Body:", JSON.stringify(error.requestBody, null, 2));
+      console.error("Raw error:", JSON.stringify(error.rawError, null, 2));
     }
   }
 });
@@ -106,7 +103,7 @@ client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   try {
-    console.log(`🎮 Command received: ${interaction.commandName} from ${interaction.user.tag}`);
+    console.log(`🎮 Command: ${interaction.commandName}`);
     
     if (interaction.commandName === "serverinfo") await si.execute(interaction);
     if (interaction.commandName === "tournament") await tournament.execute(interaction);
@@ -118,13 +115,13 @@ client.on("interactionCreate", async (interaction) => {
     if (interaction.commandName === "wslot") await wslot.execute(interaction);
     if (interaction.commandName === "wchannel") await wchannel.execute(interaction);
     if (interaction.commandName === "wclear") await wclear.execute(interaction);
-    if (interaction.commandName === "tcancel") await tcancel.execute(interaction);
+    // if (interaction.commandName === "tcancel") await tcancel.execute(interaction); // COMMENTED OUT
     if (interaction.commandName === "tbackup") await tbackup.execute(interaction);
   } catch (error) {
-    console.error("❌ Command execution error:", error);
+    console.error("❌ Command error:", error);
     if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({ 
-        content: "An error occurred while executing this command.", 
+        content: "Error executing command.", 
         ephemeral: true 
       }).catch(console.error);
     }
@@ -142,25 +139,21 @@ client.on("messageCreate", async (message) => {
     for (let tName in data.tournaments) {
       const t = data.tournaments[tName];
 
-      // Check if message is in backup channel
       if (t.backup && t.backup.enabled && message.channel.id === t.backup.channelId) {
         return;
       }
 
-      // Check if message is in main registration channel
       if (message.channel.id !== t.channelId) continue;
 
-      // Stop if registration is closed or full
       if (t.regClosed || (t.registrations && t.registrations.filter(r => r != null).length >= t.slots)) {
         return;
       }
 
-      // Process normal registration
       await tournament.register(message, t);
       return;
     }
   } catch (error) {
-    console.error("❌ Message processing error:", error);
+    console.error("❌ Message error:", error);
   }
 });
 
@@ -170,12 +163,12 @@ client.on("error", error => {
 });
 
 process.on("unhandledRejection", error => {
-  console.error("❌ Unhandled promise rejection:", error);
+  console.error("❌ Unhandled rejection:", error);
 });
 
 // ================= LOGIN =================
 console.log("🚀 Starting bot...");
 client.login(TOKEN).catch(err => {
-  console.error("❌ Failed to login:", err);
+  console.error("❌ Login failed:", err);
   process.exit(1);
 });

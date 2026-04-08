@@ -65,16 +65,19 @@ client.once("clientReady", async () => {
   const rest = new REST({ version: "10" }).setToken(TOKEN);
 
   try {
+    console.log("Clearing old guild commands...");
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: [] }
     );
+    console.log("Old commands cleared successfully");
 
+    console.log("Registering 12 new commands to Discord...");
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: commands }
     );
-
+    console.log("New commands registered successfully");
     console.log("Slash commands fully refreshed");
   } catch (error) {
     console.error("Failed to register commands to Discord:", error);

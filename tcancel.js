@@ -76,7 +76,7 @@ module.exports = {
       const logEmbed = new EmbedBuilder()
         .setColor(0xff0000)
         .setTitle("SLOT CANCELLED ❌")
-        .setDescription("**A slot has been officially cancelled by admin**")
+        .setDescription("**A slot has been cancelled by admin**")
         .addFields(
           { name: "🏆 Tournament", value: `**${name}**`, inline: true },
           { name: "🔢 Slot Number", value: `**#${slotNumber}**`, inline: true },

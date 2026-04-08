@@ -9,8 +9,8 @@ const winner = require("./winner");
 const wslot = require("./wslot");
 const wchannel = require("./wchannel");
 const wclear = require("./wclear");
-const tcancel = require("./tcancel"); // ✅ added
-const tbackup = require("./tbackup"); // ✅ added
+const tcancel = require("./tcancel");
+const tbackup = require("./tbackup");
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
@@ -33,54 +33,32 @@ client.once("clientReady", async () => {
     status: "online"
   });
 
-  console.log("Building slash commands...");
-
-  const commands = [];
-  const commandFiles = [
-    { name: "si", module: si },
-    { name: "tournament", module: tournament },
-    { name: "slot", module: slot },
-    { name: "tinfo", module: tinfo },
-    { name: "tclear", module: tclear },
-    { name: "tchannel", module: tchannel },
-    { name: "winner", module: winner },
-    { name: "wslot", module: wslot },
-    { name: "wchannel", module: wchannel },
-    { name: "wclear", module: wclear },
-    { name: "tcancel", module: tcancel },
-    { name: "tbackup", module: tbackup }
+  const commands = [
+    si.data.toJSON(),
+    tournament.data.toJSON(),
+    slot.data.toJSON(),
+    tinfo.data.toJSON(),
+    tclear.data.toJSON(),
+    tchannel.data.toJSON(),
+    winner.data.toJSON(),
+    wslot.data.toJSON(),
+    wchannel.data.toJSON(),
+    wclear.data.toJSON(),
+    tcancel.data.toJSON(),
+    tbackup.data.toJSON()
   ];
-
-  for (const cmd of commandFiles) {
-    try {
-      commands.push(cmd.module.data.toJSON());
-      console.log(`Loaded command: ${cmd.name}`);
-    } catch (e) {
-      console.error(`Failed to load command ${cmd.name}:`, e.message);
-    }
-  }
-
-  console.log(`Loaded ${commands.length} commands successfully`);
 
   const rest = new REST({ version: "10" }).setToken(TOKEN);
 
   try {
-    console.log("Clearing old guild commands...");
-    await rest.put(
-      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-      { body: [] }
-    );
-    console.log("Old commands cleared successfully");
-
-    console.log("Registering 12 new commands to Discord...");
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: commands }
     );
-    console.log("New commands registered successfully");
+
     console.log("Slash commands fully refreshed");
   } catch (error) {
-    console.error("Failed to register commands to Discord:", error);
+    console.error(error);
   }
 });
 
@@ -110,8 +88,8 @@ client.on("interactionCreate", async (interaction) => {
   if (interaction.commandName === "wslot") await wslot.execute(interaction);
   if (interaction.commandName === "wchannel") await wchannel.execute(interaction);
   if (interaction.commandName === "wclear") await wclear.execute(interaction);
-  if (interaction.commandName === "tcancel") await tcancel.execute(interaction); // ✅ added
-  if (interaction.commandName === "tbackup") await tbackup.execute(interaction); // ✅ added
+  if (interaction.commandName === "tcancel") await tcancel.execute(interaction);
+  if (interaction.commandName === "tbackup") await tbackup.execute(interaction);
 });
 
 // ================= MESSAGE LISTENER =================
@@ -126,12 +104,10 @@ client.on("messageCreate", async (message) => {
 
     if (message.channel.id !== t.channelId) continue;
 
-    // ❌ FULL → STOP
     if (t.registrations && t.registrations.length >= t.slots) {
       return;
     }
 
-    // ❌ AFTER CANCEL → DON'T AUTO START AGAIN
     if (t.backupMode !== true && t.registrations.length < t.slots && t.registrations.length !== 0) {
       return;
     }

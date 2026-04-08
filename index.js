@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const { Client, GatewayIntentBits, REST, Routes } = require("discord.js");
 const si = require("./si");
 const tournament = require("./tournament");
@@ -26,7 +28,7 @@ const client = new Client({
   ],
 });
 
-client.once("clientReady", async () => {
+client.once("ready", async () => {
   console.log(`Logged in as ${client.user.tag}`);
   client.user.setPresence({
     activities: [{ name: "HEROIC HUSTLE KI JAY", type: 0 }],
@@ -67,7 +69,8 @@ client.once("clientReady", async () => {
     );
     console.log("Slash commands fully refreshed");
   } catch (error) {
-    console.error("Registration error:", error.message);
+    console.error("Registration error:");
+    console.error(error);
   }
 });
 

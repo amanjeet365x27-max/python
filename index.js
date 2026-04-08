@@ -1,5 +1,3 @@
-require("dotenv").config();
-
 const { Client, GatewayIntentBits, REST, Routes } = require("discord.js");
 const si = require("./si");
 const tournament = require("./tournament");

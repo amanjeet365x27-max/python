@@ -14,7 +14,6 @@ const tbackup = require("./tbackup");
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
-const GUILD_ID = "1429536669555757068";
 
 const client = new Client({
   intents: [
@@ -49,22 +48,16 @@ client.once("clientReady", async () => {
   const rest = new REST({ version: "10" }).setToken(TOKEN);
 
   try {
-    console.log("Registering commands...");
+    console.log("Registering GLOBAL commands...");
 
-    const result = await Promise.race([
-      rest.put(
-        Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-        { body: commands }
-      ),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("TIMEOUT ERROR")), 10000)
-      )
-    ]);
+    await rest.put(
+      Routes.applicationCommands(CLIENT_ID),
+      { body: commands }
+    );
 
-    console.log("✅ SUCCESS REGISTERED");
-    console.log(result);
+    console.log("✅ GLOBAL commands registered");
   } catch (err) {
-    console.error("❌ ERROR FOUND:");
+    console.error("❌ ERROR:");
     console.error(err);
   }
 });

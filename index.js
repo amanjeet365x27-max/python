@@ -88,7 +88,6 @@ client.on("interactionCreate", async (interaction) => {
   try {
     await interaction.deferReply();
 
-    // 🔥 OVERRIDE reply → editReply automatically
     const originalReply = interaction.reply.bind(interaction);
     interaction.reply = (options) => {
       if (interaction.deferred || interaction.replied) {
@@ -135,10 +134,6 @@ client.on("messageCreate", async (message) => {
     if (message.channel.id !== t.channelId) continue;
 
     if (t.registrations && t.registrations.length >= t.slots) {
-      return;
-    }
-
-    if (t.backupMode !== true && t.registrations.length < t.slots && t.registrations.length !== 0) {
       return;
     }
 

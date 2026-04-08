@@ -47,6 +47,7 @@ module.exports = {
       });
     }
     const t = data.tournaments[name];
+    t.name = name; // ONLY LINE ADDED - fixes the crash in backupRegister
     const filled = t.registrations.filter(r => r != null).length;
     const emptySlots = t.slots - filled;
     if (emptySlots <= 0) {

@@ -81,7 +81,7 @@ module.exports = {
           { name: "🏆 Tournament", value: `**${name}**`, inline: true },
           { name: "🔢 Slot Number", value: `**#${slotNumber}**`, inline: true },
           { name: "👑 Team Name", value: `**${removedTeam.teamName}**`, inline: false },
-          { name: "🎮 IGL / Leader", value: `<@${removedTeam.leaderId}>`, inline: true },
+          { name: "🎮 IGL", value: `<@${removedTeam.leaderId}>`, inline: true },
           { name: "👥 Team Members", value: removedTeam.members.map(id => `<@${id}>`).join("\n") || "No members listed", inline: false },
           { name: "📝 Reason", value: `**${reason}**`, inline: false },
           { name: "🛠 Cancelled By", value: `<@${interaction.user.id}>`, inline: true }

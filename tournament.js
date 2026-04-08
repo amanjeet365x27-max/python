@@ -131,6 +131,7 @@ module.exports = {
       const lines = content.split("\n").map(l => l.trim()).filter(l => l.length > 0);
       teamName = lines.length ? lines[0] : `Team-${Date.now()}`;
     }
+    teamName = teamName.replace(/<@!?[\d]+>/g, '').trim() || `Team-${Date.now()}`;
     return {
       teamName,
       members: mentionIds

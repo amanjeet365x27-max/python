@@ -53,19 +53,16 @@ client.once("ready", async () => {
   const rest = new REST({ version: "10" }).setToken(TOKEN);
 
   try {
-    await rest.put(
-      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-      { body: [] }
-    );
-    console.log("Old commands cleared");
+    console.log("Refreshing commands...");
 
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: commands }
     );
+
     console.log("Slash commands fully refreshed");
   } catch (error) {
-    console.error("Registration error:");
+    console.error("FULL ERROR:");
     console.error(error);
   }
 });

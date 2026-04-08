@@ -1,6 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const pool = require("./db");
-
 // ================= LOAD DATA =================
 async function loadData() {
   const res = await pool.query("SELECT * FROM tournaments");
@@ -10,7 +9,6 @@ async function loadData() {
   });
   return { tournaments };
 }
-
 // ================= SAVE DATA =================
 async function saveData(data) {
   for (let name in data.tournaments) {
@@ -27,7 +25,6 @@ async function saveData(data) {
     }
   }
 }
-
 // ================= TIME FORMAT =================
 function formatTime(input) {
   if (!input) return null;
@@ -47,7 +44,6 @@ function formatTime(input) {
   }
   return input;
 }
-
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("tournament")
@@ -86,8 +82,8 @@ module.exports = {
     const channel = interaction.options.getChannel("channel");
     const ping = interaction.options.getString("ping");
     let time = interaction.options.getString("time");
-    
-    // FIXED: Only format time if user actually provided it
+
+    // FIXED: Only format time if it was actually provided
     if (time) {
       time = formatTime(time);
     }

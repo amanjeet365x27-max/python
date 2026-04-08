@@ -33,20 +33,34 @@ client.once("clientReady", async () => {
     status: "online"
   });
 
-  const commands = [
-    si.data.toJSON(),
-    tournament.data.toJSON(),
-    slot.data.toJSON(),
-    tinfo.data.toJSON(),
-    tclear.data.toJSON(),
-    tchannel.data.toJSON(),
-    winner.data.toJSON(),
-    wslot.data.toJSON(),
-    wchannel.data.toJSON(),
-    wclear.data.toJSON(),
-    tcancel.data.toJSON(), // ✅ added
-    tbackup.data.toJSON() // ✅ added
+  console.log("Building slash commands...");
+
+  const commands = [];
+  const commandFiles = [
+    { name: "si", module: si },
+    { name: "tournament", module: tournament },
+    { name: "slot", module: slot },
+    { name: "tinfo", module: tinfo },
+    { name: "tclear", module: tclear },
+    { name: "tchannel", module: tchannel },
+    { name: "winner", module: winner },
+    { name: "wslot", module: wslot },
+    { name: "wchannel", module: wchannel },
+    { name: "wclear", module: wclear },
+    { name: "tcancel", module: tcancel },
+    { name: "tbackup", module: tbackup }
   ];
+
+  for (const cmd of commandFiles) {
+    try {
+      commands.push(cmd.module.data.toJSON());
+      console.log(`Loaded command: ${cmd.name}`);
+    } catch (e) {
+      console.error(`Failed to load command ${cmd.name}:`, e.message);
+    }
+  }
+
+  console.log(`Loaded ${commands.length} commands successfully`);
 
   const rest = new REST({ version: "10" }).setToken(TOKEN);
 
@@ -63,7 +77,7 @@ client.once("clientReady", async () => {
 
     console.log("Slash commands fully refreshed");
   } catch (error) {
-    console.error(error);
+    console.error("Failed to register commands to Discord:", error);
   }
 });
 

@@ -11,6 +11,7 @@ const wchannel = require("./wchannel");
 const wclear = require("./wclear");
 const tcancel = require("./tcancel");
 const tbackup = require("./tbackup");
+const tadd = require("./tadd"); // ✅ ADDED
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
@@ -44,7 +45,8 @@ client.once("clientReady", async () => {
     wchannel.data.toJSON(),
     wclear.data.toJSON(),
     tcancel.data.toJSON(),
-    tbackup.data.toJSON()
+    tbackup.data.toJSON(),
+    tadd.data.toJSON() // ✅ ADDED
   ];
 
   console.log(`Built ${commands.length} commands`);
@@ -107,6 +109,7 @@ client.on("interactionCreate", async (interaction) => {
     if (interaction.commandName === "wclear") await wclear.execute(interaction);
     if (interaction.commandName === "tcancel") await tcancel.execute(interaction);
     if (interaction.commandName === "tbackup") await tbackup.execute(interaction);
+    if (interaction.commandName === "tadd") await tadd.execute(interaction); // ✅ ADDED
 
   } catch (err) {
     console.error("Command Error:", err);

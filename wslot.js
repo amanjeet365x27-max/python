@@ -38,20 +38,28 @@ module.exports = {
       });
     }
 
-    const embed = new EmbedBuilder()
-      .setColor(0xffd700)
-      .setTitle(`🏆 ${tournamentName.toUpperCase()} SLOTLIST 🏆`)
-      .setFooter({ text: "Heroic Hustle" })
-      .setTimestamp();
+    const maxFieldsPerEmbed = 25;
+    const embeds = [];
 
-    t.winners.forEach((w, index) => {
-      embed.addFields({
-        name: `🔥 SLOT ${index + 1} — ${w.teamName}`,
-        value: `👑 **IGL:** <@${w.igl}>`,
-        inline: false
-      });
-    });
+    for (let i = 0; i < t.winners.length; i += maxFieldsPerEmbed) {
+      const embed = new EmbedBuilder()
+        .setColor(0xffd700)
+        .setTitle(`🏆 ${tournamentName.toUpperCase()} SLOTLIST 🏆`)
+        .setFooter({ text: "Heroic Hustle" })
+        .setTimestamp();
 
-    await interaction.reply({ embeds: [embed] });
+      const end = Math.min(i + maxFieldsPerEmbed, t.winners.length);
+      for (let j = i; j < end; j++) {
+        const w = t.winners[j];
+        embed.addFields({
+          name: `🔥 SLOT ${j + 1} — ${w.teamName}`,
+          value: `👑 **IGL:** <@${w.igl}>`,
+          inline: false
+        });
+      }
+      embeds.push(embed);
+    }
+
+    await interaction.reply({ embeds: embeds });
   }
 };

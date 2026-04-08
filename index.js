@@ -26,7 +26,6 @@ const client = new Client({
   ],
 });
 
-// ✅ REGISTER COMMANDS GLOBALLY + GUILD
 client.once("clientReady", async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
   
@@ -50,27 +49,42 @@ client.once("clientReady", async () => {
     tbackup.data.toJSON()
   ];
 
+  console.log(`📝 Commands to register: ${commands.map(c => c.name).join(", ")}`);
+
   const rest = new REST({ version: "10" }).setToken(TOKEN);
   
   try {
     console.log(`🔄 Started refreshing ${commands.length} application (/) commands.`);
     
-    // ✅ REGISTER TO SPECIFIC GUILD (INSTANT)
+    // Delete existing commands first
+    console.log("🗑️ Clearing old commands...");
     await rest.put(
+      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+      { body: [] }
+    );
+    console.log("✅ Old commands cleared!");
+    
+    // Wait a moment
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Register new commands
+    console.log("📤 Registering new guild commands...");
+    const result = await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: commands }
     );
-    console.log(`✅ Successfully registered ${commands.length} guild commands!`);
     
-    // ✅ REGISTER GLOBALLY (TAKES UP TO 1 HOUR)
-    await rest.put(
-      Routes.applicationCommands(CLIENT_ID),
-      { body: commands }
-    );
-    console.log(`✅ Successfully registered ${commands.length} global commands!`);
+    console.log(`✅ Successfully registered ${result.length} guild commands!`);
+    console.log(`📋 Registered commands: ${result.map(c => c.name).join(", ")}`);
     
   } catch (error) {
-    console.error("❌ Error refreshing commands:", error);
+    console.error("❌ FULL ERROR:", error);
+    if (error.rawError) {
+      console.error("❌ Raw Error Details:", JSON.stringify(error.rawError, null, 2));
+    }
+    if (error.requestBody) {
+      console.error("❌ Request Body:", JSON.stringify(error.requestBody, null, 2));
+    }
   }
 });
 
@@ -92,6 +106,8 @@ client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   try {
+    console.log(`🎮 Command received: ${interaction.commandName} from ${interaction.user.tag}`);
+    
     if (interaction.commandName === "serverinfo") await si.execute(interaction);
     if (interaction.commandName === "tournament") await tournament.execute(interaction);
     if (interaction.commandName === "slot") await slot.execute(interaction);
@@ -110,12 +126,12 @@ client.on("interactionCreate", async (interaction) => {
       await interaction.reply({ 
         content: "An error occurred while executing this command.", 
         ephemeral: true 
-      });
+      }).catch(console.error);
     }
   }
 });
 
-// ================= MESSAGE LISTENER (FIXED LOGIC) =================
+// ================= MESSAGE LISTENER =================
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
@@ -126,21 +142,20 @@ client.on("messageCreate", async (message) => {
     for (let tName in data.tournaments) {
       const t = data.tournaments[tName];
 
-      // ✅ CHECK IF MESSAGE IS IN BACKUP CHANNEL
+      // Check if message is in backup channel
       if (t.backup && t.backup.enabled && message.channel.id === t.backup.channelId) {
-        // Backup registration handled by tbackup.js collector - skip here to avoid duplicates
         return;
       }
 
-      // ✅ CHECK IF MESSAGE IS IN MAIN REGISTRATION CHANNEL
+      // Check if message is in main registration channel
       if (message.channel.id !== t.channelId) continue;
 
-      // ✅ STOP IF REGISTRATION IS CLOSED OR FULL
+      // Stop if registration is closed or full
       if (t.regClosed || (t.registrations && t.registrations.filter(r => r != null).length >= t.slots)) {
         return;
       }
 
-      // ✅ PROCESS NORMAL REGISTRATION
+      // Process normal registration
       await tournament.register(message, t);
       return;
     }
@@ -149,7 +164,18 @@ client.on("messageCreate", async (message) => {
   }
 });
 
+// ================= ERROR HANDLERS =================
+client.on("error", error => {
+  console.error("❌ Client error:", error);
+});
+
+process.on("unhandledRejection", error => {
+  console.error("❌ Unhandled promise rejection:", error);
+});
+
 // ================= LOGIN =================
+console.log("🚀 Starting bot...");
 client.login(TOKEN).catch(err => {
   console.error("❌ Failed to login:", err);
+  process.exit(1);
 });

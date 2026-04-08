@@ -9,12 +9,16 @@ const winner = require("./winner");
 const wslot = require("./wslot");
 const wchannel = require("./wchannel");
 const wclear = require("./wclear");
-// const tcancel = require("./tcancel"); // TEMPORARILY COMMENTED OUT
 const tbackup = require("./tbackup");
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const GUILD_ID = "1429536669555757068";
+
+if (!TOKEN || !CLIENT_ID) {
+  console.error("❌ MISSING TOKEN OR CLIENT_ID!");
+  process.exit(1);
+}
 
 const client = new Client({
   intents: [
@@ -34,55 +38,83 @@ client.once("clientReady", async () => {
     status: "online"
   });
 
-  const commands = [
-    si.data.toJSON(),
-    tournament.data.toJSON(),
-    slot.data.toJSON(),
-    tinfo.data.toJSON(),
-    tclear.data.toJSON(),
-    tchannel.data.toJSON(),
-    winner.data.toJSON(),
-    wslot.data.toJSON(),
-    wchannel.data.toJSON(),
-    wclear.data.toJSON(),
-    // tcancel.data.toJSON(), // TEMPORARILY COMMENTED OUT
-    tbackup.data.toJSON()
-  ];
+  // Build commands array
+  const commands = [];
+  
+  try {
+    commands.push(si.data.toJSON());
+    commands.push(tournament.data.toJSON());
+    commands.push(slot.data.toJSON());
+    commands.push(tinfo.data.toJSON());
+    commands.push(tclear.data.toJSON());
+    commands.push(tchannel.data.toJSON());
+    commands.push(winner.data.toJSON());
+    commands.push(wslot.data.toJSON());
+    commands.push(wchannel.data.toJSON());
+    commands.push(wclear.data.toJSON());
+    commands.push(tbackup.data.toJSON());
+  } catch (err) {
+    console.error("❌ Error building commands:", err.message);
+    return;
+  }
 
-  console.log(`📝 Commands to register: ${commands.map(c => c.name).join(", ")}`);
+  console.log(`📝 Built ${commands.length} commands: ${commands.map(c => c.name).join(", ")}`);
 
   const rest = new REST({ version: "10" }).setToken(TOKEN);
   
-  try {
-    console.log(`🔄 Started refreshing ${commands.length} application (/) commands.`);
-    
-    console.log("🗑️ Clearing old commands...");
-    await rest.put(
-      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-      { body: [] }
-    );
-    console.log("✅ Old commands cleared!");
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    console.log("📤 Registering new guild commands...");
-    const result = await rest.put(
-      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-      { body: commands }
-    );
-    
-    console.log(`✅ SUCCESS! Registered ${result.length} guild commands!`);
-    console.log(`📋 Active commands: ${result.map(c => c.name).join(", ")}`);
-    
-  } catch (error) {
-    console.error("❌ REGISTRATION FAILED!");
-    console.error("Error name:", error.name);
-    console.error("Error message:", error.message);
-    console.error("Error code:", error.code);
-    if (error.rawError) {
-      console.error("Raw error:", JSON.stringify(error.rawError, null, 2));
+  // Register commands with timeout protection
+  const registerCommands = async () => {
+    try {
+      console.log("🗑️ Step 1: Clearing old commands...");
+      
+      const clearResult = await Promise.race([
+        rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: [] }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Clear timeout")), 10000))
+      ]);
+      
+      console.log("✅ Step 1 DONE: Old commands cleared!");
+      
+      console.log("📤 Step 2: Registering new commands...");
+      
+      const registerResult = await Promise.race([
+        rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: commands }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Register timeout")), 15000))
+      ]);
+      
+      console.log("✅ Step 2 DONE: Commands registered!");
+      console.log(`🎉 SUCCESS! ${registerResult.length} commands are now live!`);
+      console.log(`📋 Commands: ${registerResult.map(c => c.name).join(", ")}`);
+      
+      return true;
+      
+    } catch (error) {
+      console.error("❌ Registration ERROR:");
+      console.error("   Message:", error.message);
+      console.error("   Name:", error.name);
+      
+      if (error.code) console.error("   Code:", error.code);
+      if (error.status) console.error("   Status:", error.status);
+      if (error.method) console.error("   Method:", error.method);
+      if (error.url) console.error("   URL:", error.url);
+      
+      // Try simpler registration on error
+      console.log("🔄 Retrying with simpler method...");
+      
+      try {
+        const simpleResult = await rest.put(
+          Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+          { body: commands }
+        );
+        console.log(`✅ RETRY SUCCESS! ${simpleResult.length} commands registered!`);
+        return true;
+      } catch (retryError) {
+        console.error("❌ RETRY FAILED:", retryError.message);
+        return false;
+      }
     }
-  }
+  };
+  
+  await registerCommands();
 });
 
 // ================= JOIN/LEAVE TRACKING =================
@@ -103,27 +135,34 @@ client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   try {
-    console.log(`🎮 Command: ${interaction.commandName}`);
+    console.log(`🎮 Command: ${interaction.commandName} by ${interaction.user.tag}`);
     
-    if (interaction.commandName === "serverinfo") await si.execute(interaction);
-    if (interaction.commandName === "tournament") await tournament.execute(interaction);
-    if (interaction.commandName === "slot") await slot.execute(interaction);
-    if (interaction.commandName === "tinfo") await tinfo.execute(interaction);
-    if (interaction.commandName === "tclear") await tclear.execute(interaction);
-    if (interaction.commandName === "tchannel") await tchannel.execute(interaction);
-    if (interaction.commandName === "winner") await winner.execute(interaction);
-    if (interaction.commandName === "wslot") await wslot.execute(interaction);
-    if (interaction.commandName === "wchannel") await wchannel.execute(interaction);
-    if (interaction.commandName === "wclear") await wclear.execute(interaction);
-    // if (interaction.commandName === "tcancel") await tcancel.execute(interaction); // COMMENTED OUT
-    if (interaction.commandName === "tbackup") await tbackup.execute(interaction);
+    const commandMap = {
+      "serverinfo": si,
+      "tournament": tournament,
+      "slot": slot,
+      "tinfo": tinfo,
+      "tclear": tclear,
+      "tchannel": tchannel,
+      "winner": winner,
+      "wslot": wslot,
+      "wchannel": wchannel,
+      "wclear": wclear,
+      "tbackup": tbackup
+    };
+    
+    const handler = commandMap[interaction.commandName];
+    if (handler) {
+      await handler.execute(interaction);
+    }
+    
   } catch (error) {
-    console.error("❌ Command error:", error);
+    console.error(`❌ Command error [${interaction.commandName}]:`, error.message);
     if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({ 
-        content: "Error executing command.", 
+        content: "An error occurred.", 
         ephemeral: true 
-      }).catch(console.error);
+      }).catch(() => {});
     }
   }
 });
@@ -153,22 +192,35 @@ client.on("messageCreate", async (message) => {
       return;
     }
   } catch (error) {
-    console.error("❌ Message error:", error);
+    console.error("❌ Message error:", error.message);
   }
 });
 
 // ================= ERROR HANDLERS =================
 client.on("error", error => {
-  console.error("❌ Client error:", error);
+  console.error("❌ Discord client error:", error.message);
+});
+
+client.on("warn", info => {
+  console.warn("⚠️ Warning:", info);
 });
 
 process.on("unhandledRejection", error => {
-  console.error("❌ Unhandled rejection:", error);
+  console.error("❌ Unhandled rejection:", error.message);
+});
+
+process.on("uncaughtException", error => {
+  console.error("❌ Uncaught exception:", error.message);
+  process.exit(1);
 });
 
 // ================= LOGIN =================
-console.log("🚀 Starting bot...");
+console.log("🚀 Bot starting...");
+console.log("📍 Guild ID:", GUILD_ID);
+console.log("🤖 Client ID:", CLIENT_ID ? "Set ✅" : "Missing ❌");
+console.log("🔑 Token:", TOKEN ? "Set ✅" : "Missing ❌");
+
 client.login(TOKEN).catch(err => {
-  console.error("❌ Login failed:", err);
+  console.error("❌ Login failed:", err.message);
   process.exit(1);
 });

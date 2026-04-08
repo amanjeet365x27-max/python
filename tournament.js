@@ -28,6 +28,29 @@ async function saveData(data) {
   }
 }
 
+// ================= TIME FORMAT =================
+function formatTime(input) {
+  if (!input) return null;
+  let t = input.toLowerCase().replace(/\s/g, "");
+
+  let match = t.match(/^(\d{1,2})(am|pm)$/);
+  if (match) {
+    let hour = parseInt(match[1]);
+    if (match[2] === "pm" && hour !== 12) hour += 12;
+    if (match[2] === "am" && hour === 12) hour = 0;
+    return `${hour.toString().padStart(2, "0")}:00`;
+  }
+
+  match = t.match(/^(\d{1,2}):(\d{2})$/);
+  if (match) {
+    let hour = parseInt(match[1]);
+    let min = match[2];
+    return `${hour.toString().padStart(2, "0")}:${min}`;
+  }
+
+  return input;
+}
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("tournament")
@@ -47,7 +70,11 @@ module.exports = {
         .addChoices(
           { name: "Yes", value: "yes" },
           { name: "No", value: "no" }
-        )),
+        ))
+    .addStringOption(o =>
+      o.setName("time")
+        .setDescription("Tournament time (optional)")
+        .setRequired(false)),
 
   async execute(interaction) {
     const ADMIN_ROLE_ID = "1488964288210272458";
@@ -61,6 +88,9 @@ module.exports = {
     const mentions = interaction.options.getInteger("mentions");
     const channel = interaction.options.getChannel("channel");
     const ping = interaction.options.getString("ping");
+    let time = interaction.options.getString("time");
+
+    time = formatTime(time);
 
     const data = await loadData();
     if (!data.tournaments) data.tournaments = {};
@@ -78,7 +108,8 @@ module.exports = {
       channelId: channel.id,
       registrations: [],
       regClosed: false,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      time: time || null
     };
 
     await saveData(data);
@@ -102,6 +133,10 @@ module.exports = {
         { name: "Channel", value: `<#${channel.id}>` }
       )
       .setImage("https://cdn.oneesports.id/cdn-data/sites/2/2024/12/462574290_1265728211300654_4514308865345103186_n.jpg");
+
+    if (time) {
+      embed.addFields({ name: "Time", value: `${time}`, inline: true });
+    }
 
     await channel.send({ embeds: [embed] });
     await interaction.reply({ content: "✅ Tournament registration started!", ephemeral: true });

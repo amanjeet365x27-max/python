@@ -26,8 +26,10 @@ const client = new Client({
   ],
 });
 
+// ✅ FIXED: Changed from "clientReady" to "ready"
 client.once("ready", async () => {
   console.log(`Logged in as ${client.user.tag}`);
+  
   client.user.setPresence({
     activities: [{ name: "HEROIC HUSTLE KI JAY", type: 0 }],
     status: "online"
@@ -49,13 +51,12 @@ client.once("ready", async () => {
   ];
 
   const rest = new REST({ version: "10" }).setToken(TOKEN);
-
+  
   try {
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: commands }
     );
-
     console.log("Slash commands fully refreshed");
   } catch (error) {
     console.error(error);
@@ -78,6 +79,7 @@ client.on("guildMemberRemove", () => {
 // ================= COMMAND HANDLER =================
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
+
   if (interaction.commandName === "serverinfo") await si.execute(interaction);
   if (interaction.commandName === "tournament") await tournament.execute(interaction);
   if (interaction.commandName === "slot") await slot.execute(interaction);
@@ -92,7 +94,7 @@ client.on("interactionCreate", async (interaction) => {
   if (interaction.commandName === "tbackup") await tbackup.execute(interaction);
 });
 
-// ================= MESSAGE LISTENER =================
+// ================= MESSAGE LISTENER (FIXED LOGIC) =================
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
@@ -102,16 +104,21 @@ client.on("messageCreate", async (message) => {
   for (let tName in data.tournaments) {
     const t = data.tournaments[tName];
 
+    // ✅ CHECK IF MESSAGE IS IN BACKUP CHANNEL
+    if (t.backup && t.backup.enabled && message.channel.id === t.backup.channelId) {
+      // Backup registration handled by tbackup.js collector - skip here to avoid duplicates
+      return;
+    }
+
+    // ✅ CHECK IF MESSAGE IS IN MAIN REGISTRATION CHANNEL
     if (message.channel.id !== t.channelId) continue;
 
-    if (t.registrations && t.registrations.length >= t.slots) {
+    // ✅ STOP IF REGISTRATION IS CLOSED OR FULL
+    if (t.regClosed || (t.registrations && t.registrations.filter(r => r != null).length >= t.slots)) {
       return;
     }
 
-    if (t.backupMode !== true && t.registrations.length < t.slots && t.registrations.length !== 0) {
-      return;
-    }
-
+    // ✅ PROCESS NORMAL REGISTRATION
     await tournament.register(message, t);
     return;
   }

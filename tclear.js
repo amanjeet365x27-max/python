@@ -75,7 +75,7 @@ module.exports = {
     for (const category of categoriesToDelete.values()) {
       try {
         // Delete all children first
-        const children = category.children.cache;
+        const children = interaction.guild.channels.cache.filter(c => c.parentId === category.id);
         for (const child of children.values()) {
           try {
             await child.delete(`Tournament ${name} cleared`);

@@ -40,7 +40,7 @@ module.exports = {
 
   async execute(interaction) {
     const ADMIN_ROLE_ID = "1488964288210272458";
-    const SPECIAL_ROLE_ID = "1449832147161448721"; // ✅ added
+    const SPECIAL_ROLE_ID = "1449832147161448721";
 
     const member = await interaction.guild.members.fetch(interaction.user.id);
 
@@ -66,7 +66,6 @@ module.exports = {
       return interaction.reply({ content: "No teams registered yet.", ephemeral: true });
     }
 
-    // ===== FILTER SLOTS (new feature) =====
     let registrations = t.registrations;
     if (slotsStr !== "all") {
       let selected = [];
@@ -106,7 +105,6 @@ module.exports = {
 
     let currentMatchTimestamp = Math.floor(startDate.getTime() / 1000);
 
-    // ================= CREATE HIDDEN CATEGORY =================
     const category = await interaction.guild.channels.create({
       name: `Tournament - \( {name} ( \){mode})`,
       type: ChannelType.GuildCategory,
@@ -127,7 +125,6 @@ module.exports = {
       ]
     });
 
-    // ================= CREATE MATCH CHANNELS =================
     const totalMatches = Math.ceil(registrations.length / teamsPerMatch);
     let firstMatchChannel = null;
 
@@ -195,8 +192,7 @@ module.exports = {
           desc += `**IGL:** <@${team1.leaderId}>\n`;
           desc += `**Players:** \( {team1.members.map(id => `<@ \){id}>`).join(", ")}\n\n`;
         }
-      } 
-      else {
+      } else {
         desc += `**${matchTeams.length} Teams**\n\n`;
         
         matchTeams.forEach((team, index) => {
@@ -227,114 +223,79 @@ module.exports = {
       });
     }
 
-    // ================= SEND EXACT RULEBOOK IF ENABLED =================
+    // ================= SEND YOUR EXACT RULEBOOK =================
     if (sendRules === "yes" && firstMatchChannel) {
-      const ruleHeader = new EmbedBuilder()
+      const ruleEmbed = new EmbedBuilder()
         .setColor(0xFFD700)
         .setTitle("🏆 HEROIC HUSTLE – OFFICIAL RULEBOOK")
-        .setDescription("(Applicable for CS & BR Matches)");
-
-      const ruleGeneral = new EmbedBuilder()
-        .setColor(0x00BFFF)
-        .setTitle("📌 1. GENERAL RULES (Applicable to All Matches)")
         .setDescription(
-          "All players must join the lobby 10 minutes before match time.\n" +
-          "Only registered players are allowed to play. No substitutes without approval.\n" +
-          "Players must follow fair play & sportsmanship at all times.\n" +
-          "Any kind of abusive language, toxicity, or harassment will result in penalties.\n" +
-          "Organizer’s decision is final in all disputes."
+` (Applicable for CS & BR Matches)
+📌 1. GENERAL RULES (Applicable to All Matches)
+All players must join the lobby 10 minutes before match time.
+Only registered players are allowed to play. No substitutes without approval.
+Players must follow fair play & sportsmanship at all times.
+Any kind of abusive language, toxicity, or harassment will result in penalties.
+Organizer’s decision is final in all disputes.
+🚫 2. STRICTLY PROHIBITED
+Use of hacks, cheats, scripts, or third-party tools
+Exploiting game bugs/glitches
+Teaming with other squads (in BR)
+Stream sniping
+Sharing room ID/password with outsiders
+⚠️ Violation = Immediate Disqualification + Ban
+⚔️ 3. CS MODE RULES (Clash Squad)
+📊 Match Format
+Mode: Clash Squad (Custom Room)
+Format: Best of 1 / Best of 3 (depending on round)
+Map: Decided by organizer or veto system
+👥 Team Rules
+Team Size: 4 Players
+No extra players allowed in match
+🎮 Gameplay Rules
+Character skills allowed (as per tournament decision)
+Gun skins allowed unless stated otherwise
+No intentional disconnects
+⏱️ Disconnection Rule
+If a player disconnects before Round 1 → Rematch possible
+Mid-match disconnect → Match continues
+🏆 Winning Criteria
+First team to win required rounds (e.g., 7 rounds) wins the match
+🪂 4. BR MODE RULES (Battle Royale)
+📊 Match Format
+Mode: Squad Battle Royale (Custom Room)
+Map: Bermuda / Kalahari / Alpine (as decided)
+👥 Team Rules
+Team Size: 4 Players
+Solo / Duo not allowed unless specified
+🎮 Gameplay Rules
+No teaming with other squads
+No unfair advantage exploits
+All players must land after match start (no pre-jump bugs)
+🏆 Points System (Example)
+🥇 1st Place – 12 Points
+🥈 2nd Place – 9 Points
+🥉 3rd Place – 8 Points
+Each Kill – 1 Point
+(Can be adjusted depending on tournament)
+📸 5. RESULT & PROOF SUBMISSION
+Winning team must submit screenshot of result screen
+Submit within 5 minutes after match
+Any dispute must be reported immediately
+⚖️ 6. PENALTIES
+Late Join → Warning / Round loss
+Rule Violation → Point deduction / Disqualification
+Repeated misconduct → Permanent ban from Heroic Hustle
+📢 7. ORGANIZER RIGHTS
+Heroic Hustle reserves the right to:
+Change rules if required
+Reschedule matches
+Disqualify any team without prior notice (with valid reason)
+❤️ FINAL NOTE
+Play fair. Play smart. Play like a Hero.
+Welcome to Heroic Hustle ⚔️🔥`
         );
 
-      const ruleProhibited = new EmbedBuilder()
-        .setColor(0xFF0000)
-        .setTitle("🚫 2. STRICTLY PROHIBITED")
-        .setDescription(
-          "Use of hacks, cheats, scripts, or third-party tools\n" +
-          "Exploiting game bugs/glitches\n" +
-          "Teaming with other squads (in BR)\n" +
-          "Stream sniping\n" +
-          "Sharing room ID/password with outsiders\n\n" +
-          "⚠️ Violation = Immediate Disqualification + Ban"
-        );
-
-      const ruleCS = new EmbedBuilder()
-        .setColor(0x32CD32)
-        .setTitle("⚔️ 3. CS MODE RULES (Clash Squad)")
-        .setDescription(
-          "📊 Match Format\n" +
-          "Mode: Clash Squad (Custom Room)\n" +
-          "Format: Best of 1 / Best of 3 (depending on round)\n" +
-          "Map: Decided by organizer or veto system\n\n" +
-          "👥 Team Rules\n" +
-          "Team Size: 4 Players\n" +
-          "No extra players allowed in match\n\n" +
-          "🎮 Gameplay Rules\n" +
-          "Character skills allowed (as per tournament decision)\n" +
-          "Gun skins allowed unless stated otherwise\n" +
-          "No intentional disconnects\n\n" +
-          "⏱️ Disconnection Rule\n" +
-          "If a player disconnects before Round 1 → Rematch possible\n" +
-          "Mid-match disconnect → Match continues\n\n" +
-          "🏆 Winning Criteria\n" +
-          "First team to win required rounds (e.g., 7 rounds) wins the match"
-        );
-
-      const ruleBR = new EmbedBuilder()
-        .setColor(0xFFA500)
-        .setTitle("🪂 4. BR MODE RULES (Battle Royale)")
-        .setDescription(
-          "📊 Match Format\n" +
-          "Mode: Squad Battle Royale (Custom Room)\n" +
-          "Map: Bermuda / Kalahari / Alpine (as decided)\n\n" +
-          "👥 Team Rules\n" +
-          "Team Size: 4 Players\n" +
-          "Solo / Duo not allowed unless specified\n\n" +
-          "🎮 Gameplay Rules\n" +
-          "No teaming with other squads\n" +
-          "No unfair advantage exploits\n" +
-          "All players must land after match start (no pre-jump bugs)\n\n" +
-          "🏆 Points System (Example)\n" +
-          "🥇 1st Place – 12 Points\n" +
-          "🥈 2nd Place – 9 Points\n" +
-          "🥉 3rd Place – 8 Points\n" +
-          "Each Kill – 1 Point\n" +
-          "(Can be adjusted depending on tournament)"
-        );
-
-      const ruleSubmission = new EmbedBuilder()
-        .setColor(0xFF1493)
-        .setTitle("📸 5. RESULT & PROOF SUBMISSION")
-        .setDescription(
-          "Winning team must submit screenshot of result screen\n" +
-          "Submit within 5 minutes after match\n" +
-          "Any dispute must be reported immediately"
-        );
-
-      const rulePenalties = new EmbedBuilder()
-        .setColor(0xDC143C)
-        .setTitle("⚖️ 6. PENALTIES")
-        .setDescription(
-          "Late Join → Warning / Round loss\n" +
-          "Rule Violation → Point deduction / Disqualification\n" +
-          "Repeated misconduct → Permanent ban from Heroic Hustle"
-        );
-
-      const ruleOrganizer = new EmbedBuilder()
-        .setColor(0x8A2BE2)
-        .setTitle("📢 7. ORGANIZER RIGHTS")
-        .setDescription(
-          "Heroic Hustle reserves the right to:\n" +
-          "Change rules if required\n" +
-          "Reschedule matches\n" +
-          "Disqualify any team without prior notice (with valid reason)\n\n" +
-          "❤️ FINAL NOTE\n" +
-          "Play fair. Play smart. Play like a Hero.\n" +
-          "Welcome to Heroic Hustle ⚔️🔥"
-        );
-
-      await firstMatchChannel.send({
-        embeds: [ruleHeader, ruleGeneral, ruleProhibited, ruleCS, ruleBR, ruleSubmission, rulePenalties, ruleOrganizer]
-      });
+      await firstMatchChannel.send({ embeds: [ruleEmbed] });
     }
 
     await interaction.reply({

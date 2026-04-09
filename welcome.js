@@ -71,7 +71,7 @@ module.exports = {
       )
       .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
       .setImage("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTav_PylEOnN6JnSuNNYbFPjUzJ9q2nFV0tpNje1LcYxA&s=10")
-      .setFooter({ text: "Heroic Hustle • Welcome System" })
+      .setFooter({ text: "Heroic Hustle" })
       .setTimestamp();
 
     await channel.send({

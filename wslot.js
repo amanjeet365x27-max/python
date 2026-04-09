@@ -53,8 +53,8 @@ module.exports = {
     for (let i = 0; i < mid; i++) {
       const w = winnersList[i];
       embed1.addFields({
-        name: `🔥 SLOT ${i + 1} — ${w.teamName}`,
-        value: `👑 **IGL:** <@${w.igl}>`,
+        name: `🔥 SLOT ${i + 1} — ${w ? w.teamName : "EMPTY SLOT"}`,
+        value: w ? `👑 **IGL:** <@${w.igl}>` : `❌ EMPTY`,
         inline: false
       });
     }
@@ -71,8 +71,8 @@ module.exports = {
       for (let i = mid; i < total; i++) {
         const w = winnersList[i];
         embed2.addFields({
-          name: `🔥 SLOT ${i + 1} — ${w.teamName}`,
-          value: `👑 **IGL:** <@${w.igl}>`,
+          name: `🔥 SLOT ${i + 1} — ${w ? w.teamName : "EMPTY SLOT"}`,
+          value: w ? `👑 **IGL:** <@${w.igl}>` : `❌ EMPTY`,
           inline: false
         });
       }

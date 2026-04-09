@@ -106,7 +106,7 @@ module.exports = {
     let currentMatchTimestamp = Math.floor(startDate.getTime() / 1000);
 
     const category = await interaction.guild.channels.create({
-      name: `Tournament - \( {name} ( \){mode})`,
+      name: `Tournament - (${name} (${mode}))`,
       type: ChannelType.GuildCategory,
       permissionOverwrites: [
         {
@@ -175,22 +175,22 @@ module.exports = {
 
       const thisMatchTimestamp = currentMatchTimestamp + (matchNum - 1) * gapMinutes * 60;
 
-      let desc = `**Match \( {matchNum}** • ** \){name}**\n\n`;
+      let desc = `**Match ${matchNum}** • **${name}**\n\n`;
 
       if (mode === "CS") {
         const team1 = matchTeams[0];
         const team2 = matchTeams[1] || null;
 
         if (team1 && team2) {
-          desc += `**\( {team1.teamName}** vs ** \){team2.teamName}**\n\n`;
+          desc += `**${team1.teamName}** vs **${team2.teamName}**\n\n`;
           desc += `**IGL Team 1:** <@${team1.leaderId}>\n`;
-          desc += `**Players Team 1:** \( {team1.members.map(id => `<@ \){id}>`).join(", ")}\n\n`;
+          desc += `**Players Team 1:** ${team1.members.map(id => `<@${id}>`).join(", ")}\n\n`;
           desc += `**IGL Team 2:** <@${team2.leaderId}>\n`;
-          desc += `**Players Team 2:** \( {team2.members.map(id => `<@ \){id}>`).join(", ")}\n\n`;
+          desc += `**Players Team 2:** ${team2.members.map(id => `<@${id}>`).join(", ")}\n\n`;
         } else if (team1) {
           desc += `**${team1.teamName}** vs **EMPTY SLOT**\n\n`;
           desc += `**IGL:** <@${team1.leaderId}>\n`;
-          desc += `**Players:** \( {team1.members.map(id => `<@ \){id}>`).join(", ")}\n\n`;
+          desc += `**Players:** ${team1.members.map(id => `<@${id}>`).join(", ")}\n\n`;
         }
       } else {
         desc += `**${matchTeams.length} Teams**\n\n`;
@@ -199,14 +199,14 @@ module.exports = {
           if (team) {
             desc += `**${index + 1}. ${team.teamName}**\n`;
             desc += `**IGL:** <@${team.leaderId}>\n`;
-            desc += `**Players:** \( {team.members.map(id => `<@ \){id}>`).join(", ")}\n\n`;
+            desc += `**Players:** ${team.members.map(id => `<@${id}>`).join(", ")}\n\n`;
           } else {
             desc += `**${index + 1}. EMPTY SLOT**\n\n`;
           }
         });
       }
 
-      desc += `**Match Timing:** <t:\( {thisMatchTimestamp}:F> (<t: \){thisMatchTimestamp}:R>)`;
+      desc += `**Match Timing:** <t:${thisMatchTimestamp}:F> (<t:${thisMatchTimestamp}:R>)`;
 
       const matchEmbed = new EmbedBuilder()
         .setColor(0x00ff99)
@@ -223,27 +223,24 @@ module.exports = {
       });
     }
 
-    // ================= SEND YOUR EXACT RULEBOOK =================
     if (sendRules === "yes" && firstMatchChannel) {
-      const ruleEmbed = new EmbedBuilder()
-        .setColor(0xFFD700)
-        .setTitle("🏆 HEROIC HUSTLE – OFFICIAL RULEBOOK")
-        .setDescription(
-` (Applicable for CS & BR Matches)
-📌 1. GENERAL RULES (Applicable to All Matches)
+
+      const embeds = [
+        new EmbedBuilder().setColor(0xFFD700).setTitle("🏆 HEROIC HUSTLE – OFFICIAL RULEBOOK").setDescription(`(Applicable for CS & BR Matches)`),
+        new EmbedBuilder().setColor(0x00ff00).setDescription(`📌 1. GENERAL RULES (Applicable to All Matches)
 All players must join the lobby 10 minutes before match time.
 Only registered players are allowed to play. No substitutes without approval.
 Players must follow fair play & sportsmanship at all times.
 Any kind of abusive language, toxicity, or harassment will result in penalties.
-Organizer’s decision is final in all disputes.
-🚫 2. STRICTLY PROHIBITED
+Organizer’s decision is final in all disputes.`),
+        new EmbedBuilder().setColor(0xff0000).setDescription(`🚫 2. STRICTLY PROHIBITED
 Use of hacks, cheats, scripts, or third-party tools
 Exploiting game bugs/glitches
 Teaming with other squads (in BR)
 Stream sniping
 Sharing room ID/password with outsiders
-⚠️ Violation = Immediate Disqualification + Ban
-⚔️ 3. CS MODE RULES (Clash Squad)
+⚠️ Violation = Immediate Disqualification + Ban`),
+        new EmbedBuilder().setColor(0x0099ff).setDescription(`⚔️ 3. CS MODE RULES (Clash Squad)
 📊 Match Format
 Mode: Clash Squad (Custom Room)
 Format: Best of 1 / Best of 3 (depending on round)
@@ -259,8 +256,8 @@ No intentional disconnects
 If a player disconnects before Round 1 → Rematch possible
 Mid-match disconnect → Match continues
 🏆 Winning Criteria
-First team to win required rounds (e.g., 7 rounds) wins the match
-🪂 4. BR MODE RULES (Battle Royale)
+First team to win required rounds (e.g., 7 rounds) wins the match`),
+        new EmbedBuilder().setColor(0xff9900).setDescription(`🪂 4. BR MODE RULES (Battle Royale)
 📊 Match Format
 Mode: Squad Battle Royale (Custom Room)
 Map: Bermuda / Kalahari / Alpine (as decided)
@@ -276,26 +273,28 @@ All players must land after match start (no pre-jump bugs)
 🥈 2nd Place – 9 Points
 🥉 3rd Place – 8 Points
 Each Kill – 1 Point
-(Can be adjusted depending on tournament)
-📸 5. RESULT & PROOF SUBMISSION
+(Can be adjusted depending on tournament)`),
+        new EmbedBuilder().setColor(0x9966ff).setDescription(`📸 5. RESULT & PROOF SUBMISSION
 Winning team must submit screenshot of result screen
 Submit within 5 minutes after match
-Any dispute must be reported immediately
-⚖️ 6. PENALTIES
+Any dispute must be reported immediately`),
+        new EmbedBuilder().setColor(0x00ffff).setDescription(`⚖️ 6. PENALTIES
 Late Join → Warning / Round loss
 Rule Violation → Point deduction / Disqualification
-Repeated misconduct → Permanent ban from Heroic Hustle
-📢 7. ORGANIZER RIGHTS
+Repeated misconduct → Permanent ban from Heroic Hustle`),
+        new EmbedBuilder().setColor(0xffffff).setDescription(`📢 7. ORGANIZER RIGHTS
 Heroic Hustle reserves the right to:
 Change rules if required
 Reschedule matches
-Disqualify any team without prior notice (with valid reason)
-❤️ FINAL NOTE
+Disqualify any team without prior notice (with valid reason)`),
+        new EmbedBuilder().setColor(0xff66cc).setDescription(`❤️ FINAL NOTE
 Play fair. Play smart. Play like a Hero.
-Welcome to Heroic Hustle ⚔️🔥`
-        );
+Welcome to Heroic Hustle ⚔️🔥`)
+      ];
 
-      await firstMatchChannel.send({ embeds: [ruleEmbed] });
+      for (const e of embeds) {
+        await firstMatchChannel.send({ embeds: [e] });
+      }
     }
 
     await interaction.reply({

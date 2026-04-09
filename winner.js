@@ -41,10 +41,19 @@ module.exports = {
     // ===== SAVE WINNER DATA =====
     if (!t.winners) t.winners = [];
 
-    t.winners.push({
-      teamName: teamName,
-      igl: iglUser.id
-    });
+    const emptyIndex = t.winners.findIndex(s => s === null);
+
+    if (emptyIndex !== -1) {
+      t.winners[emptyIndex] = {
+        teamName: teamName,
+        igl: iglUser.id
+      };
+    } else {
+      t.winners.push({
+        teamName: teamName,
+        igl: iglUser.id
+      });
+    }
 
     data.tournaments[tournamentName] = t;
     await tournament.saveData(data);

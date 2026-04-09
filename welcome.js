@@ -41,7 +41,7 @@ module.exports = {
     };
     saveConfig(config);
 
-    await interaction.reply({
+    return await interaction.reply({
       content: `✅ Welcome channel set to <#${channel.id}>`,
       ephemeral: true
     });
@@ -49,7 +49,7 @@ module.exports = {
 
   // ===== EVENT HANDLER =====
   name: Events.GuildMemberAdd,
-  async execute(member) {
+  async onJoin(member) {
     const config = getConfig();
     const guildConfig = config[member.guild.id];
     if (!guildConfig) return;

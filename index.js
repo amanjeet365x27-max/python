@@ -87,7 +87,7 @@ client.on("guildMemberRemove", () => {
 
 // ✅ ADDED WELCOME EVENT
 client.on("guildMemberAdd", (member) => {
-  welcome.execute(member);
+  welcome.onJoin(member);
 });
 
 // ================= COMMAND HANDLER =================

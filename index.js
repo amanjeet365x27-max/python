@@ -12,6 +12,8 @@ const wclear = require("./wclear");
 const tcancel = require("./tcancel");
 const tbackup = require("./tbackup");
 const tadd = require("./tadd"); // ✅ ADDED
+const wcancel = require("./wcancel"); // ✅ ADDED
+const welcome = require("./welcome"); // ✅ ADDED
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
@@ -46,7 +48,9 @@ client.once("clientReady", async () => {
     wclear.data.toJSON(),
     tcancel.data.toJSON(),
     tbackup.data.toJSON(),
-    tadd.data.toJSON() // ✅ ADDED
+    tadd.data.toJSON(), // ✅ ADDED
+    wcancel.data.toJSON(), // ✅ ADDED
+    welcome.data.toJSON() // ✅ ADDED
   ];
 
   console.log(`Built ${commands.length} commands`);
@@ -81,6 +85,11 @@ client.on("guildMemberRemove", () => {
   si.leaves = si.leaves.filter(t => now - t < 86400000);
 });
 
+// ✅ ADDED WELCOME EVENT
+client.on("guildMemberAdd", (member) => {
+  welcome.execute(member);
+});
+
 // ================= COMMAND HANDLER =================
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
@@ -109,6 +118,8 @@ client.on("interactionCreate", async (interaction) => {
     if (interaction.commandName === "tcancel") await tcancel.execute(interaction);
     if (interaction.commandName === "tbackup") await tbackup.execute(interaction);
     if (interaction.commandName === "tadd") await tadd.execute(interaction); // ✅ ADDED
+    if (interaction.commandName === "wcancel") await wcancel.execute(interaction); // ✅ ADDED
+    if (interaction.commandName === "welcome") await welcome.execute(interaction); // ✅ ADDED
 
   } catch (err) {
     console.error("Command Error:", err);

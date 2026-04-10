@@ -57,7 +57,7 @@ module.exports = {
         `❤️ Enjoy your stay and play like a **HERO!**`
       )
       .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
-      .setImage("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTav_PylEOnN6JnSuNNYbFPjUzJ9q2nFV0tpNje1LcYxA&s=10")
+      .setImage("https://share.creavite.co/69d87835a828deb15873867d.gif")
       .setFooter({ text: "Heroic Hustle" })
       .setTimestamp();
     await channel.send({

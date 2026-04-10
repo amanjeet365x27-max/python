@@ -73,21 +73,19 @@ client.once("clientReady", async () => {
 });
 
 // ================= JOIN/LEAVE TRACKING =================
-client.on("guildMemberAdd", () => {
+client.on("guildMemberAdd", (member) => {
   const now = Date.now();
   si.joins.push(now);
   si.joins = si.joins.filter(t => now - t < 86400000);
+
+  // ✅ FIX ADDED (MERGED HERE)
+  welcome.onJoin(member);
 });
 
 client.on("guildMemberRemove", () => {
   const now = Date.now();
   si.leaves.push(now);
   si.leaves = si.leaves.filter(t => now - t < 86400000);
-});
-
-// ✅ ADDED WELCOME EVENT
-client.on("guildMemberAdd", (member) => {
-  welcome.onJoin(member);
 });
 
 // ================= COMMAND HANDLER =================

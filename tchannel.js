@@ -126,7 +126,7 @@ module.exports = {
     });
 
     const totalMatches = Math.ceil(registrations.length / teamsPerMatch);
-    let firstMatchChannel = null;
+    let allMatchChannels = [];
 
     for (let matchNum = 1; matchNum <= totalMatches; matchNum++) {
       const startIndex = (matchNum - 1) * teamsPerMatch;
@@ -155,7 +155,7 @@ module.exports = {
         ]
       });
 
-      if (matchNum === 1) firstMatchChannel = matchChannel;
+      allMatchChannels.push(matchChannel);
 
       const pingRoles = [];
       
@@ -223,7 +223,7 @@ module.exports = {
       });
     }
 
-    if (sendRules === "yes" && firstMatchChannel) {
+    if (sendRules === "yes" && allMatchChannels.length) {
 
       const embeds = [
         new EmbedBuilder().setColor(0xFFD700).setTitle("🏆 HEROIC HUSTLE – OFFICIAL RULEBOOK").setDescription(`(Applicable for CS & BR Matches)`),
@@ -292,8 +292,10 @@ Play fair. Play smart. Play like a Hero.
 Welcome to Heroic Hustle ⚔️🔥`)
       ];
 
-      for (const e of embeds) {
-        await firstMatchChannel.send({ embeds: [e] });
+      for (const ch of allMatchChannels) {
+        for (const e of embeds) {
+          await ch.send({ embeds: [e] });
+        }
       }
     }
 

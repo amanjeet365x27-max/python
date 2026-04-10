@@ -70,18 +70,13 @@ module.exports = {
         `❤️ Enjoy your stay and play like a **HERO!**`
       )
       .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+      .setImage("https://share.creavite.co/69d87835a828deb15873867d.gif") // ✅ FIX HERE
       .setFooter({ text: "Heroic Hustle" })
       .setTimestamp();
 
     await channel.send({
       content: `<@${member.id}>`,
-      embeds: [embed],
-      files: [
-        {
-          attachment: "https://share.creavite.co/69d87835a828deb15873867d.gif",
-          name: "welcome.gif"
-        }
-      ]
+      embeds: [embed]
     });
   }
 };

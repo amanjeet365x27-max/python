@@ -13,7 +13,7 @@ const tcancel = require("./tcancel");
 const tbackup = require("./tbackup");
 const tadd = require("./tadd"); // ✅ ADDED
 const wcancel = require("./wcancel"); // ✅ ADDED
-const welcome = require("./winner"); // ✅ ADDED
+const welcome = require("./welcome"); // ✅ ADDED
 
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;

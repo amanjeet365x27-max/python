@@ -70,7 +70,7 @@ module.exports = {
         `❤️ Enjoy your stay and play like a **HERO!**`
       )
       .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
-      .setImage("https://share.creavite.co/69d87835a828deb15873867d.gif") // ✅ FIX HERE
+      .setImage("https://cdn.discordapp.com/attachments/1447105516714197024/1492019968353763509/standard.gif?ex=69d9cf60&is=69d87de0&hm=d48cd479b2f75888171deb0c120a4ddd2f028d74c5044f10db62c53d5e05fe1f") // ✅ FIX HERE
       .setFooter({ text: "Heroic Hustle" })
       .setTimestamp();
 

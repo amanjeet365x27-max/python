@@ -15,6 +15,11 @@ const tadd = require("./tadd"); // ✅ ADDED
 const wcancel = require("./wcancel"); // ✅ ADDED
 const welcome = require("./welcome"); // ✅ ADDED
 
+// ✅ NEW COMMANDS ADDED
+const point = require("./point");
+const leaderboard = require("./leaderboard");
+const lreset = require("./lreset");
+
 const TOKEN = process.env.DISCORD_BOT_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 
@@ -50,7 +55,12 @@ client.once("clientReady", async () => {
  tbackup.data.toJSON(),
  tadd.data.toJSON(), // ✅ ADDED
  wcancel.data.toJSON(), // ✅ ADDED
- welcome.data.toJSON() // ✅ ADDED
+ welcome.data.toJSON(), // ✅ ADDED
+
+ // ✅ NEW COMMANDS REGISTERED
+ point.data.toJSON(),
+ leaderboard.data.toJSON(),
+ lreset.data.toJSON()
  ];
 
  console.log(`Built ${commands.length} commands`);
@@ -118,6 +128,11 @@ client.on("interactionCreate", async (interaction) => {
  if (interaction.commandName === "tadd") await tadd.execute(interaction); // ✅ ADDED
  if (interaction.commandName === "wcancel") await wcancel.execute(interaction); // ✅ ADDED
  if (interaction.commandName === "welcome") await welcome.execute(interaction); // ✅ ADDED
+
+ // ✅ NEW COMMAND HANDLERS
+ if (interaction.commandName === "point") await point.execute(interaction);
+ if (interaction.commandName === "leaderboard") await leaderboard.execute(interaction);
+ if (interaction.commandName === "lreset") await lreset.execute(interaction);
 
  } catch (err) {
  console.error("Command Error:", err);
